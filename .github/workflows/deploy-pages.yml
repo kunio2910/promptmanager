@@ -1,0 +1,52 @@
+name: Build Prompt Manager for GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - index.html
+      - assets/**
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-static-build
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAGES: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        run: npm run build:pages
+
+      - name: Publish generated files to the Pages root
+        run: |
+          cp -R dist-pages/. .
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html assets
+          if git diff --cached --quiet; then
+            echo "Generated site is already up to date."
+          else
+            git commit -m "chore: update GitHub Pages build"
+            git push
+          fi
