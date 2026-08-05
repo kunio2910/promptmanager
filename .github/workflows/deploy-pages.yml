@@ -40,6 +40,7 @@ jobs:
 
       - name: Publish generated files to the Pages root
         run: |
+          rm -rf assets
           cp -R dist-pages/. .
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

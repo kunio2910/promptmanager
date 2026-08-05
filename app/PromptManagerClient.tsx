@@ -1,6 +1,34 @@
 "use client";
 
-import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowRight,
+  Camera,
+  ChevronDown,
+  Copy,
+  Diamond,
+  Download,
+  Eye,
+  FileJson2,
+  FolderOpen,
+  GripVertical,
+  Library,
+  Lightbulb,
+  Moon,
+  Palette,
+  Pencil,
+  Plus,
+  Search,
+  Settings,
+  Shirt,
+  Sparkles,
+  Sun,
+  Swords,
+  Trash2,
+  Upload,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 
 type Screen = "create" | "library" | "json" | "settings";
 type SettingsTab = "options" | "fields";
@@ -25,6 +53,7 @@ type IconName =
   | "sword"
   | "camera"
   | "sun"
+  | "moon"
   | "palette"
   | "diamond"
   | "grip"
@@ -216,34 +245,37 @@ const optionLists: Record<string, string[]> = {
   quality: ["8K", "Ultra Detail", "Masterpiece", "High Quality", "Sharp Focus", "Global Illumination", "Ray Tracing", "HDR"],
 };
 
-function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
-  const glyphs: Record<IconName, string> = {
-    spark: "✦",
-    folder: "▣",
-    library: "▤",
-    json: "⊞",
-    settings: "⚙",
-    plus: "+",
-    trash: "♜",
-    edit: "♢",
-    copy: "▣",
-    eye: "⊙",
-    download: "⇩",
-    upload: "⇧",
-    search: "⌕",
-    chevron: "⌄",
-    arrow: "→",
-    person: "♙",
-    shirt: "♧",
-    sword: "⚔",
-    camera: "▣",
-    sun: "☼",
-    palette: "♧",
-    diamond: "◇",
-    grip: "⁙",
-    bulb: "♧",
-  };
-  return <span className={`icon icon-${name}`} style={{ fontSize: size }} aria-hidden="true">{glyphs[name]}</span>;
+const iconComponents: Record<IconName, LucideIcon> = {
+  spark: Sparkles,
+  folder: FolderOpen,
+  library: Library,
+  json: FileJson2,
+  settings: Settings,
+  plus: Plus,
+  trash: Trash2,
+  edit: Pencil,
+  copy: Copy,
+  eye: Eye,
+  download: Download,
+  upload: Upload,
+  search: Search,
+  chevron: ChevronDown,
+  arrow: ArrowRight,
+  person: UserRound,
+  shirt: Shirt,
+  sword: Swords,
+  camera: Camera,
+  sun: Sun,
+  moon: Moon,
+  palette: Palette,
+  diamond: Diamond,
+  grip: GripVertical,
+  bulb: Lightbulb,
+};
+
+function Icon({ name, size = 18, strokeWidth = 1.8 }: { name: IconName; size?: number; strokeWidth?: number }) {
+  const IconComponent = iconComponents[name];
+  return <IconComponent className={`icon icon-${name}`} size={size} strokeWidth={strokeWidth} aria-hidden="true" />;
 }
 
 function Stepper({ current }: { current: number }) {
@@ -295,6 +327,15 @@ function Sidebar({ screen, onNavigate }: { screen: Screen; onNavigate: (screen: 
 
 function Toolbar({ onImport, onSave, onClear }: { onImport: (event: ChangeEvent<HTMLInputElement>) => void; onSave: () => void; onClear: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") return "light";
+    const savedTheme = window.localStorage.getItem("prompt-manager-theme");
+    return savedTheme === "dark" || savedTheme === "light" ? savedTheme : "light";
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem("prompt-manager-theme", theme);
+  }, [theme]);
   return (
     <div className="topbar">
       <Stepper current={1} />
@@ -303,6 +344,9 @@ function Toolbar({ onImport, onSave, onClear }: { onImport: (event: ChangeEvent<
         <input ref={fileRef} type="file" accept="application/json" hidden onChange={onImport} />
         <button className="outline-button" onClick={onSave}><Icon name="library" size={19} />Lưu prompt</button>
         <button className="outline-button danger" onClick={onClear}><Icon name="trash" size={18} />Xóa tất cả</button>
+        <button className="theme-toggle" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")} aria-label={theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"} title={theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}>
+          <Icon name={theme === "dark" ? "sun" : "moon"} size={18} />
+        </button>
       </div>
     </div>
   );
@@ -353,6 +397,9 @@ function JsonPreview({ form, full = false }: { form: Record<string, string>; ful
 }
 
 function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, configuredGroups }: { form: Record<string, string>; onUpdate: (key: string, value: string) => void; prompts: PromptRecord[]; onNavigate: (screen: Screen) => void; onSelectPrompt: (prompt: PromptRecord) => void; configuredGroups: Group[] }) {
+  const generatedPrompt = makePrompt(form);
+  const [promptState, setPromptState] = useState({ source: generatedPrompt, text: generatedPrompt });
+  const promptDraft = promptState.source === generatedPrompt ? promptState.text : generatedPrompt;
   return (
     <div className="create-layout">
       <div className="panel form-panel">
@@ -362,8 +409,8 @@ function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, confi
       <div className="create-right">
         <div className="panel preview-prompt">
           <div className="panel-heading"><h2>PREVIEW PROMPT <small>(sau khi sinh)</small></h2></div>
-          <div className="prompt-text">{makePrompt(form)}</div>
-          <div className="char-count">Số ký tự: {makePrompt(form).length}</div>
+          <textarea className="prompt-text prompt-textarea" aria-label="Preview prompt có thể chỉnh sửa" value={promptDraft} onChange={(event) => setPromptState({ source: generatedPrompt, text: event.target.value })} />
+          <div className="char-count">Số ký tự: {promptDraft.length}</div>
         </div>
         <div className="panel json-panel">
           <div className="panel-heading heading-actions"><h2>XEM TRƯỚC JSON <span className="valid-pill">✓ Hợp lệ</span></h2><button className="primary-button small-button" onClick={() => navigator.clipboard?.writeText(JSON.stringify(makeJson(form), null, 2))}><Icon name="copy" size={17} />Copy JSON</button></div>
