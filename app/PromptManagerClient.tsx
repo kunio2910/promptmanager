@@ -104,7 +104,7 @@ type CloudSyncConfig = {
   apiUrl: string;
 };
 
-type CloudSyncState = "idle" | "syncing" | "success" | "error";
+type CloudSyncState = "idle" | "saving" | "loading" | "success" | "error";
 
 const defaultCloudSyncConfig: CloudSyncConfig = {
   apiUrl: "https://script.google.com/macros/s/AKfycbwTYtjLpcBuVaX_jDNMJB8NqmwffhTbsvLmaOWxngFYFyGZd9nT7BgnIuIMcJvOxsOgmQ/exec",
@@ -735,7 +735,7 @@ function Stepper({ current }: { current: number }) {
 }
 
 function CloudSyncDialog({ config, syncState, onClose, onSaveAndSync }: { config: CloudSyncConfig; syncState: CloudSyncState; onClose: () => void; onSaveAndSync: (config: CloudSyncConfig) => void }) {
-  const isBusy = syncState === "syncing";
+  const isBusy = syncState === "saving" || syncState === "loading";
   return (
     <div className="sync-backdrop" role="presentation">
       <div className="sync-dialog" role="dialog" aria-modal="true" aria-labelledby="sync-dialog-title">
@@ -747,7 +747,7 @@ function CloudSyncDialog({ config, syncState, onClose, onSaveAndSync }: { config
     </div>
   );
   /*
-  const isBusy = syncState === "syncing";
+  const isBusy = syncState === "saving" || syncState === "loading";
   return (
     <div className="sync-backdrop" role="presentation">
       <div className="sync-dialog" role="dialog" aria-modal="true" aria-labelledby="sync-dialog-title">
@@ -809,8 +809,8 @@ function Toolbar({ onImport, onSave, onSaveToCloud, onClear, onSync, syncState }
       <div className="top-actions">
         <button className="outline-button" onClick={() => fileRef.current?.click()}><Icon name="folder" size={19} />Mở file JSON</button>
         <input ref={fileRef} type="file" accept="application/json" hidden onChange={onImport} />
-        <button className="outline-button sync-button" onClick={onSync} disabled={syncState === "syncing"}><Icon name="cloud" size={19} />{syncState === "syncing" ? "Đang đồng bộ..." : "Google Sheet"}</button>
-        <button className="outline-button cloud-save-button" onClick={onSaveToCloud} disabled={syncState === "syncing"}><Icon name="cloud" size={19} />{syncState === "syncing" ? "Đang lưu..." : "Lưu"}</button>
+        <button className="outline-button sync-button" onClick={onSync} disabled={syncState === "saving" || syncState === "loading"}><Icon name="cloud" size={19} />{syncState === "loading" ? "Đang tải..." : "Google Sheet"}</button>
+        <button className="outline-button cloud-save-button" onClick={onSaveToCloud} disabled={syncState === "saving" || syncState === "loading"}><Icon name="cloud" size={19} />{syncState === "saving" ? "Đang lưu..." : "Lưu"}</button>
         <button className="outline-button" onClick={onSave}><Icon name="library" size={19} />Lưu prompt</button>
         <button className="outline-button danger" onClick={onClear}><Icon name="trash" size={18} />Xóa tất cả</button>
         <button className="theme-toggle" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")} aria-label={theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"} title={theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}>
@@ -1040,6 +1040,7 @@ export default function Home() {
     }
   });
   const [syncState, setSyncState] = useState<CloudSyncState>("idle");
+  const cloudOperationRef = useRef<"save" | "load" | null>(null);
   const showToast = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2400); };
   const updateForm = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const savePrompt = () => { const imageUrls = promptImagesFromForm(form); const newPrompt: PromptRecord = { id: Date.now(), title: `${form.name || "Prompt mới"} - ${form.time || "Bản nháp"}`, subject: form.name || "Chưa đặt tên", topic: "Nhân vật", style: form.style?.split(" /")[0] || "Realistic", ratio: form.aspect_ratio || "16:9", created: "08/05/2024 10:30", description: makePrompt(form), imageUrl: imageUrls.character || imageUrls.scenery || imageUrls.action, imageUrls, data: { ...form, image_url_character: imageUrls.character, image_url_scenery: imageUrls.scenery, image_url_action: imageUrls.action } }; setPrompts((current) => [newPrompt, ...current]); setSelectedPrompt(newPrompt); showToast("Đã lưu prompt vào thư viện"); };
@@ -1048,31 +1049,32 @@ export default function Home() {
   const filteredSelected = useMemo(() => prompts.find((prompt) => prompt.id === selectedPrompt.id) || prompts[0] || initialPrompts[0], [prompts, selectedPrompt.id]);
   const configuredGroups = groups.map((group) => ({ ...group, fields: fields[group.key] || group.fields }));
   const saveToCloud = async () => {
+    if (cloudOperationRef.current) return;
     const config = { apiUrl: cloudConfig.apiUrl.trim() };
     if (!config.apiUrl) { showToast("Vui lòng cấu hình URL Google Sheet"); setSyncState("error"); return; }
+    cloudOperationRef.current = "save";
     setCloudConfig(config);
     window.localStorage.setItem("prompt-manager-cloud-sync", JSON.stringify(config));
-    setSyncState("syncing");
+    setSyncState("saving");
     try {
-      const synced = await syncCloudData(config, prompts, options, fields);
-      const nextPrompts = (synced.prompts || prompts).map(normalizePromptRecord);
-      setPrompts(nextPrompts);
-      setSelectedPrompt(nextPrompts.find((prompt) => prompt.id === selectedPrompt.id) || nextPrompts[0] || initialPrompts[0]);
-      if (synced.options) setOptions(synced.options);
-      if (synced.fields) setFields(synced.fields);
+      await syncCloudData(config, prompts, options, fields);
       setSyncState("success");
-      showToast(`Đã lưu ${nextPrompts.length} prompt lên Google Sheet`);
+      showToast(`Đã lưu ${prompts.length} prompt lên Google Sheet`);
     } catch (error) {
       setSyncState("error");
       showToast(error instanceof Error ? error.message : "Lưu lên Google Sheet thất bại");
+    } finally {
+      cloudOperationRef.current = null;
     }
   };
   const loadFromCloud = async () => {
+    if (cloudOperationRef.current) return;
     const config = { apiUrl: cloudConfig.apiUrl.trim() };
     if (!config.apiUrl) { showToast("Vui lòng cấu hình URL Google Sheet"); setSyncState("error"); return; }
+    cloudOperationRef.current = "load";
     setCloudConfig(config);
     window.localStorage.setItem("prompt-manager-cloud-sync", JSON.stringify(config));
-    setSyncState("syncing");
+    setSyncState("loading");
     try {
       const remote = await loadCloudData(config);
       const nextPrompts = (remote.prompts || []).map(normalizePromptRecord);
@@ -1085,6 +1087,8 @@ export default function Home() {
     } catch (error) {
       setSyncState("error");
       showToast(error instanceof Error ? error.message : "Tải dữ liệu từ Google Sheet thất bại");
+    } finally {
+      cloudOperationRef.current = null;
     }
   };
   const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={setScreen} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={(prompt) => { setSelectedPrompt(prompt); setForm(formWithPromptImages(prompt)); }} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); showToast("Đã xóa prompt"); }} onEdit={(prompt) => { setForm(formWithPromptImages(prompt)); setScreen("create"); }} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
