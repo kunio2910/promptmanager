@@ -765,7 +765,7 @@ function Sidebar({ screen, onNavigate }: { screen: Screen; onNavigate: (screen: 
   );
 }
 
-function Toolbar({ onImport, onSave, onClear, onSync, syncState }: { onImport: (event: ChangeEvent<HTMLInputElement>) => void; onSave: () => void; onClear: () => void; onSync: () => void; syncState: CloudSyncState }) {
+function Toolbar({ onImport, onSave, onSaveToCloud, onClear, onSync, syncState }: { onImport: (event: ChangeEvent<HTMLInputElement>) => void; onSave: () => void; onSaveToCloud: () => void; onClear: () => void; onSync: () => void; syncState: CloudSyncState }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window === "undefined") return "light";
@@ -783,6 +783,7 @@ function Toolbar({ onImport, onSave, onClear, onSync, syncState }: { onImport: (
         <button className="outline-button" onClick={() => fileRef.current?.click()}><Icon name="folder" size={19} />Mở file JSON</button>
         <input ref={fileRef} type="file" accept="application/json" hidden onChange={onImport} />
         <button className="outline-button sync-button" onClick={onSync} disabled={syncState === "syncing"}><Icon name="cloud" size={19} />{syncState === "syncing" ? "Đang đồng bộ..." : "Google Sheet"}</button>
+        <button className="outline-button cloud-save-button" onClick={onSaveToCloud} disabled={syncState === "syncing"}><Icon name="cloud" size={19} />{syncState === "syncing" ? "Đang lưu..." : "Lưu"}</button>
         <button className="outline-button" onClick={onSave}><Icon name="library" size={19} />Lưu prompt</button>
         <button className="outline-button danger" onClick={onClear}><Icon name="trash" size={18} />Xóa tất cả</button>
         <button className="theme-toggle" onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")} aria-label={theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"} title={theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}>
@@ -1048,6 +1049,7 @@ export default function Home() {
     }
   };
   const openCloudSync = () => { setSyncDialogOpen(true); };
+  const saveToCloud = () => { void runCloudSync(cloudConfig); };
   const autoSyncStarted = useRef(false);
   // The initial sync must run once with the initial in-memory data as the migration source.
   useEffect(() => {
@@ -1057,5 +1059,5 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={setScreen} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={(prompt) => { setSelectedPrompt(prompt); setForm({ ...prompt.data, image_url: prompt.imageUrl || prompt.data.image_url || "" }); }} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); showToast("Đã xóa prompt"); }} onEdit={(prompt) => { setForm({ ...prompt.data, image_url: prompt.imageUrl || prompt.data.image_url || "" }); setScreen("create"); }} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
-  return <div className="app-shell"><Sidebar screen={screen} onNavigate={setScreen} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onClear={clearAll} onSync={openCloudSync} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}{syncDialogOpen && <CloudSyncDialog config={cloudConfig} syncState={syncState} onClose={() => setSyncDialogOpen(false)} onSaveAndSync={(config) => { setSyncDialogOpen(false); void runCloudSync(config); }} />}</div>;
+  return <div className="app-shell"><Sidebar screen={screen} onNavigate={setScreen} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onSaveToCloud={saveToCloud} onClear={clearAll} onSync={openCloudSync} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}{syncDialogOpen && <CloudSyncDialog config={cloudConfig} syncState={syncState} onClose={() => setSyncDialogOpen(false)} onSaveAndSync={(config) => { setSyncDialogOpen(false); void runCloudSync(config); }} />}</div>;
 }
