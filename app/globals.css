@@ -104,13 +104,14 @@ button { cursor: pointer; }
 .field input, .field select, .library-filter-row select, .library-mini-toolbar select, .pagination select, .searchbox input, .order-input input, .order-number { height: 33px; border: 1px solid var(--line-dark); border-radius: 6px; color: #12214a; background: white; padding: 0 10px; outline: none; min-width: 0; font-size: 11px; width: 100%; }
 .field input:focus, .field select:focus, .searchbox input:focus, textarea:focus { border-color: #a795ff; box-shadow: 0 0 0 3px rgba(100, 62, 239, .08); }
 .select-wrap { display: block; position: relative; }
-.select-wrap select { appearance: none; padding-right: 26px; }
+.select-wrap select, .select-wrap input { appearance: none; padding-right: 26px; }
 .select-wrap .icon { position: absolute; right: 9px; top: 8px; color: #586783; pointer-events: none; }
 .create-right { min-width: 0; display: grid; grid-template-rows: auto minmax(280px, 1fr) auto auto; gap: 11px; }
-.preview-prompt { min-height: 195px; }
+.preview-prompt { min-height: 300px; }
 .prompt-text { margin: 0 13px; border: 1px solid var(--line-dark); border-radius: 6px; min-height: 94px; padding: 13px; color: #6a7590; background: #fff; font-size: 12px; line-height: 1.55; }
-.prompt-textarea { width: calc(100% - 26px); resize: vertical; outline: none; font-family: Arial, Helvetica, sans-serif; }
+.prompt-textarea { width: calc(100% - 26px); min-height: 165px; resize: vertical; outline: none; font-family: Arial, Helvetica, sans-serif; }
 .char-count { color: #63718f; font-size: 11px; padding: 9px 13px 12px; }
+.prompt-actions { display: flex; justify-content: flex-end; gap: 9px; padding: 0 13px 13px; }
 .json-panel { min-height: 350px; display: flex; flex-direction: column; }
 .json-code { margin: 0 13px 13px; border: 1px solid var(--line-dark); border-radius: 6px; overflow: auto; background: #fff; flex: 1; min-height: 200px; }
 .json-code pre { padding: 12px 14px; margin: 0; min-width: 520px; font: 11px/1.55 Consolas, "Courier New", monospace; color: #173064; white-space: pre-wrap; }

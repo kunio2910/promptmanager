@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Camera,
@@ -793,12 +793,13 @@ function Toolbar({ onImport, onSave, onClear, onSync, syncState }: { onImport: (
 
 function Field({ config, value, onChange, settingsOptions }: { config: FieldConfig; value: string; onChange: (value: string) => void; settingsOptions: Record<string, string[]> }) {
   const selectOptions = config.optionGroup ? settingsOptions[config.optionGroup] || config.options || [] : config.options || [];
-  const selectedValue = selectOptions.includes(value) ? value : selectOptions[0] || value || "";
+  const selectedValue = value || selectOptions[0] || "";
+  const listId = `field-options-${useId().replace(/:/g, "")}`;
   return (
     <label className="field">
       {config.label && <span className="field-label">{config.label}</span>}
       {config.type === "select" ? (
-        <span className="select-wrap"><select value={selectedValue} onChange={(event) => onChange(event.target.value)}>{selectOptions.map((option) => <option key={option}>{option}</option>)}</select><Icon name="chevron" size={15} /></span>
+        <span className="select-wrap"><input list={listId} value={selectedValue} onChange={(event) => onChange(event.target.value)} aria-label={config.label || "Thông tin prompt"} /><datalist id={listId}>{selectOptions.map((option) => <option key={option} value={option} />)}</datalist><Icon name="chevron" size={15} /></span>
       ) : <input value={value} placeholder={config.placeholder} onChange={(event) => onChange(event.target.value)} />}
     </label>
   );
@@ -855,9 +856,9 @@ function JsonPreview({ form, full = false }: { form: Record<string, string>; ful
 
 function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, configuredGroups, settingsOptions }: { form: Record<string, string>; onUpdate: (key: string, value: string) => void; prompts: PromptRecord[]; onNavigate: (screen: Screen) => void; onSelectPrompt: (prompt: PromptRecord) => void; configuredGroups: Group[]; settingsOptions: Record<string, string[]> }) {
   const [activeCategory, setActiveCategory] = useState<PromptCategory>("character");
-  const generatedPrompt = makePrompt(form);
-  const [promptState, setPromptState] = useState({ source: generatedPrompt, text: generatedPrompt });
-  const promptDraft = promptState.source === generatedPrompt ? promptState.text : generatedPrompt;
+  const [promptDraft, setPromptDraft] = useState("");
+  const createPrompt = () => setPromptDraft(makePrompt(form));
+  const clearPrompt = () => setPromptDraft("");
   const categoryGroups = configuredGroups.filter((group) => (group.category || "character") === activeCategory);
   return (
     <div className="create-layout">
@@ -869,8 +870,9 @@ function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, confi
       <div className="create-right">
         <div className="panel preview-prompt">
           <div className="panel-heading"><h2>PREVIEW PROMPT <small>(sau khi sinh)</small></h2></div>
-          <textarea className="prompt-text prompt-textarea" aria-label="Preview prompt có thể chỉnh sửa" value={promptDraft} onChange={(event) => setPromptState({ source: generatedPrompt, text: event.target.value })} />
+          <textarea className="prompt-text prompt-textarea" aria-label="Preview prompt có thể chỉnh sửa" value={promptDraft} onChange={(event) => setPromptDraft(event.target.value)} placeholder="Bấm &quot;Tạo prompt&quot; để sinh prompt từ thông tin đã nhập" />
           <div className="char-count">Số ký tự: {promptDraft.length}</div>
+          <div className="prompt-actions"><button className="primary-button small-button" onClick={createPrompt}><Icon name="spark" size={17} />Tạo prompt</button><button className="outline-button small-button danger" onClick={clearPrompt} disabled={!promptDraft}><Icon name="trash" size={17} />Xóa prompt</button></div>
         </div>
         <div className="panel json-panel">
           <div className="panel-heading heading-actions"><h2>XEM TRƯỚC JSON <span className="valid-pill">✓ Hợp lệ</span></h2><button className="primary-button small-button" onClick={() => navigator.clipboard?.writeText(JSON.stringify(makeJson(form), null, 2))}><Icon name="copy" size={17} />Copy JSON</button></div>
