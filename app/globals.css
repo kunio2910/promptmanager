@@ -212,6 +212,8 @@ button { cursor: pointer; }
 .sync-dialog .panel-heading h2 { display: flex; align-items: center; gap: 8px; color: var(--purple); }
 .dialog-close { border: 0; background: transparent; color: var(--muted); font-size: 24px; line-height: 1; padding: 0 4px; cursor: pointer; }
 .sync-description { color: var(--muted); font-size: 12px; line-height: 1.55; margin: 14px 0; }
+.sync-public-url { display: grid; gap: 7px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-muted); color: var(--muted); font-size: 11px; }
+.sync-public-url code { color: var(--foreground); font-size: 10px; line-height: 1.45; overflow-wrap: anywhere; }
 .sync-field { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
 .sync-field span { color: var(--muted); font-size: 11px; font-weight: 600; }
 .sync-field input { width: 100%; height: 38px; border: 1px solid var(--line-dark); border-radius: 6px; background: var(--surface); color: var(--foreground); padding: 0 11px; outline: none; font-size: 12px; }
