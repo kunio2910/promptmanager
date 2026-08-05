@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useId, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Camera,
@@ -794,12 +794,32 @@ function Toolbar({ onImport, onSave, onClear, onSync, syncState }: { onImport: (
 function Field({ config, value, onChange, settingsOptions }: { config: FieldConfig; value: string; onChange: (value: string) => void; settingsOptions: Record<string, string[]> }) {
   const selectOptions = config.optionGroup ? settingsOptions[config.optionGroup] || config.options || [] : config.options || [];
   const selectedValue = value || selectOptions[0] || "";
-  const listId = `field-options-${useId().replace(/:/g, "")}`;
+  const [isOpen, setIsOpen] = useState(false);
+  const [showAllOptions, setShowAllOptions] = useState(false);
+  const comboRef = useRef<HTMLSpanElement>(null);
+  const visibleOptions = selectOptions.filter((option) => showAllOptions || !value || option.toLocaleLowerCase().includes(value.toLocaleLowerCase()));
+  useEffect(() => {
+    if (!isOpen) return;
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!comboRef.current?.contains(event.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [isOpen]);
+  const chooseOption = (option: string) => {
+    onChange(option);
+    setIsOpen(false);
+    setShowAllOptions(false);
+  };
   return (
     <label className="field">
       {config.label && <span className="field-label">{config.label}</span>}
       {config.type === "select" ? (
-        <span className="select-wrap"><input list={listId} value={selectedValue} onChange={(event) => onChange(event.target.value)} aria-label={config.label || "Thông tin prompt"} /><datalist id={listId}>{selectOptions.map((option) => <option key={option} value={option} />)}</datalist><Icon name="chevron" size={15} /></span>
+        <span ref={comboRef} className={`select-wrap editable-select ${isOpen ? "open" : ""}`}>
+          <input value={selectedValue} onFocus={() => { setIsOpen(true); setShowAllOptions(true); }} onClick={() => { setIsOpen(true); setShowAllOptions(true); }} onChange={(event) => { onChange(event.target.value); setIsOpen(true); setShowAllOptions(false); }} onKeyDown={(event) => { if (event.key === "Escape") setIsOpen(false); }} aria-label={config.label || "Thông tin prompt"} aria-expanded={isOpen} aria-haspopup="listbox" />
+          <button type="button" className="select-trigger" aria-label="Mở danh sách tùy chọn" aria-expanded={isOpen} onMouseDown={(event) => event.preventDefault()} onClick={() => { setIsOpen((current) => !current); setShowAllOptions(true); }}><Icon name="chevron" size={15} /></button>
+          {isOpen && <div className="select-menu" role="listbox">{visibleOptions.length ? visibleOptions.map((option) => <button type="button" className={`select-option ${option === value ? "active" : ""}`} role="option" aria-selected={option === value} key={option} onMouseDown={(event) => event.preventDefault()} onClick={() => chooseOption(option)}>{option}</button>) : <span className="select-empty">Không có tùy chọn phù hợp</span>}</div>}
+        </span>
       ) : <input value={value} placeholder={config.placeholder} onChange={(event) => onChange(event.target.value)} />}
     </label>
   );
