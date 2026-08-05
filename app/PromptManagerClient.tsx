@@ -195,7 +195,7 @@ const groups: Group[] = [
   {
     key: "clothing",
     category: "character",
-    number: 2,
+    number: 4,
     label: "Trang phục (Clothing)",
     shortLabel: "Trang phục",
     icon: "shirt",
@@ -215,7 +215,7 @@ const groups: Group[] = [
   {
     key: "weapon_prop",
     category: "character",
-    number: 3,
+    number: 5,
     label: "Vũ khí / Vật dụng (Weapon / Prop)",
     shortLabel: "Vũ khí / Vật dụng",
     icon: "sword",
@@ -259,7 +259,7 @@ const groups: Group[] = [
   {
     key: "camera",
     category: "character",
-    number: 5,
+    number: 6,
     label: "Camera / Góc nhìn",
     shortLabel: "Camera / Góc nhìn",
     icon: "camera",
@@ -276,7 +276,7 @@ const groups: Group[] = [
   {
     key: "lighting",
     category: "character",
-    number: 6,
+    number: 7,
     label: "Ánh sáng (Lighting)",
     shortLabel: "Ánh sáng",
     icon: "sun",
@@ -292,7 +292,7 @@ const groups: Group[] = [
   {
     key: "style",
     category: "character",
-    number: 7,
+    number: 8,
     label: "Phong cách (Style)",
     shortLabel: "Phong cách",
     icon: "palette",
@@ -309,7 +309,7 @@ const groups: Group[] = [
   {
     key: "quality",
     category: "character",
-    number: 8,
+    number: 9,
     label: "Chất lượng (Quality)",
     shortLabel: "Chất lượng",
     icon: "diamond",
@@ -326,7 +326,7 @@ const groups: Group[] = [
   {
     key: "character_details",
     category: "character",
-    number: 4,
+    number: 2,
     label: "Chi tiết ngoại hình",
     shortLabel: "Chi tiết ngoại hình",
     icon: "person",
@@ -342,7 +342,7 @@ const groups: Group[] = [
   {
     key: "character_mood",
     category: "character",
-    number: 5,
+    number: 3,
     label: "Góc nhìn & Thần thái",
     shortLabel: "Góc nhìn & Thần thái",
     icon: "person",
@@ -939,7 +939,7 @@ function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, confi
   const createPrompt = () => setPromptDraft(makePrompt(form, activeCategory));
   const clearPrompt = () => setPromptDraft("");
   useEffect(() => setImageLoadError(false), [imageUrl]);
-  const categoryGroups = configuredGroups.filter((group) => (group.category || "character") === activeCategory);
+  const categoryGroups = configuredGroups.filter((group) => (group.category || "character") === activeCategory).sort((a, b) => a.number - b.number);
   return (
     <div className="create-layout">
       <div className="panel form-panel">
@@ -1000,7 +1000,7 @@ function PromptDetail({ prompt }: { prompt: PromptRecord }) {
 }
 
 function SettingsView({ tab, setTab, category, setCategory, selectedGroup, setSelectedGroup, options, setOptions, fields, setFields }: { tab: SettingsTab; setTab: (tab: SettingsTab) => void; category: PromptCategory; setCategory: (category: PromptCategory) => void; selectedGroup: string; setSelectedGroup: (key: string) => void; options: Record<string, string[]>; setOptions: React.Dispatch<React.SetStateAction<Record<string, string[]>>>; fields: Record<string, FieldConfig[]>; setFields: React.Dispatch<React.SetStateAction<Record<string, FieldConfig[]>>> }) {
-  const visibleGroups = groups.filter((item) => (item.category || "character") === category);
+  const visibleGroups = groups.filter((item) => (item.category || "character") === category).sort((a, b) => a.number - b.number);
   const group = visibleGroups.find((item) => item.key === selectedGroup) || visibleGroups[0] || groups[0];
   const activeOptions = options[group.key] || [];
   const activeFields = fields[group.key] || group.fields;
@@ -1039,7 +1039,6 @@ export default function Home() {
       return defaultCloudSyncConfig;
     }
   });
-  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
   const [syncState, setSyncState] = useState<CloudSyncState>("idle");
   const showToast = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2400); };
   const updateForm = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
@@ -1048,45 +1047,46 @@ export default function Home() {
   const importJson = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsed = JSON.parse(String(reader.result)); const next = { ...form, ...parsed.subject, ...parsed.character_details, hair_style: parsed.character_details?.hair_style ?? form.hair_style, hair_color: parsed.character_details?.hair_color ?? form.hair_color, eye_color: parsed.character_details?.eye_color ?? form.eye_color, ...parsed.character_mood, character_pose: parsed.character_mood?.pose ?? form.character_pose, character_mood: parsed.character_mood?.mood ?? form.character_mood, ...parsed.environment, location: parsed.environment?.location ?? form.location, scene_type: parsed.environment?.type ?? form.scene_type, scene: parsed.environment?.description ?? form.scene, ...parsed.scenery_weather, environment_light: parsed.scenery_weather?.light ?? form.environment_light, ...parsed.terrain, terrain: parsed.terrain?.main ?? form.terrain, vegetation: parsed.terrain?.vegetation ?? form.vegetation, water: parsed.terrain?.water ?? form.water, landmark: parsed.terrain?.highlights ?? form.landmark, ...parsed.scenery_style, scenery_style: parsed.scenery_style?.style ?? form.scenery_style, scenery_composition: parsed.scenery_style?.composition ?? form.scenery_composition, scenery_ratio: parsed.scenery_style?.aspect_ratio ?? form.scenery_ratio, scenery_palette: parsed.scenery_style?.palette ?? form.scenery_palette, scenery_detail: parsed.scenery_style?.detail ?? form.scenery_detail, ...parsed.scenery_other, ...parsed.camera, ...parsed.lighting, ...parsed.style, clothing_material: parsed.clothing?.material ?? form.clothing_material, clothing_condition: parsed.clothing?.condition ?? form.clothing_condition, ...parsed.clothing, weapon_material: parsed.weapon_prop?.material ?? form.weapon_material, weapon_condition: parsed.weapon_prop?.condition ?? form.weapon_condition, ...parsed.weapon_prop, ...parsed.quality, negative: parsed.quality?.negative_prompt || form.negative, action_type: parsed.action?.type ?? form.action_type, action_intensity: parsed.action?.intensity ?? form.action_intensity, main_action: parsed.action?.main_action ?? form.main_action, action_details: parsed.action?.details ?? form.action_details, action_result: parsed.action?.result ?? form.action_result, character_pose: parsed.poses?.character_pose ?? form.character_pose, character_expression: parsed.poses?.character_expression ?? form.character_expression, target_pose: parsed.poses?.target_pose ?? form.target_pose, target_expression: parsed.poses?.target_expression ?? form.target_expression, character_direction: parsed.movement_direction?.character ?? form.character_direction, target_direction: parsed.movement_direction?.target ?? form.target_direction, action_camera: parsed.movement_direction?.camera_follow ?? form.action_camera, action_start: parsed.timing?.start ?? form.action_start, action_peak: parsed.timing?.climax ?? form.action_peak, action_end: parsed.timing?.end ?? form.action_end, action_prop: parsed.action_prop?.item ?? form.action_prop, prop_hand: parsed.action_prop?.hand ?? form.prop_hand, prop_description: parsed.action_prop?.description ?? form.prop_description, motion_effect: parsed.action_effects?.motion ?? form.motion_effect, impact_effect: parsed.action_effects?.impact ?? form.impact_effect, sound_effect: parsed.action_effects?.sound ?? form.sound_effect, action_lighting: parsed.action_other?.lighting ?? form.action_lighting, action_note: parsed.action_other?.note ?? form.action_note }; setForm(next); showToast("Đã nhập JSON thành công"); } catch { showToast("File JSON không hợp lệ"); } }; reader.readAsText(file); };
   const filteredSelected = useMemo(() => prompts.find((prompt) => prompt.id === selectedPrompt.id) || prompts[0] || initialPrompts[0], [prompts, selectedPrompt.id]);
   const configuredGroups = groups.map((group) => ({ ...group, fields: fields[group.key] || group.fields }));
-  const runCloudSync = async (nextConfig: CloudSyncConfig) => {
-    const config = { apiUrl: nextConfig.apiUrl.trim() };
+  const saveToCloud = async () => {
+    const config = { apiUrl: cloudConfig.apiUrl.trim() };
+    if (!config.apiUrl) { showToast("Vui lòng cấu hình URL Google Sheet"); setSyncState("error"); return; }
+    setCloudConfig(config);
+    window.localStorage.setItem("prompt-manager-cloud-sync", JSON.stringify(config));
+    setSyncState("syncing");
+    try {
+      const synced = await syncCloudData(config, prompts, options, fields);
+      const nextPrompts = (synced.prompts || prompts).map(normalizePromptRecord);
+      setPrompts(nextPrompts);
+      setSelectedPrompt(nextPrompts.find((prompt) => prompt.id === selectedPrompt.id) || nextPrompts[0] || initialPrompts[0]);
+      if (synced.options) setOptions(synced.options);
+      if (synced.fields) setFields(synced.fields);
+      setSyncState("success");
+      showToast(`Đã lưu ${nextPrompts.length} prompt lên Google Sheet`);
+    } catch (error) {
+      setSyncState("error");
+      showToast(error instanceof Error ? error.message : "Lưu lên Google Sheet thất bại");
+    }
+  };
+  const loadFromCloud = async () => {
+    const config = { apiUrl: cloudConfig.apiUrl.trim() };
     if (!config.apiUrl) { showToast("Vui lòng cấu hình URL Google Sheet"); setSyncState("error"); return; }
     setCloudConfig(config);
     window.localStorage.setItem("prompt-manager-cloud-sync", JSON.stringify(config));
     setSyncState("syncing");
     try {
       const remote = await loadCloudData(config);
-      const initialIds = new Set(initialPrompts.map((prompt) => prompt.id));
-      const mergedById = new Map(prompts.map((prompt) => [prompt.id, prompt]));
-      (remote.prompts || []).map(normalizePromptRecord).forEach((remotePrompt) => {
-        if (!mergedById.has(remotePrompt.id) || initialIds.has(remotePrompt.id)) mergedById.set(remotePrompt.id, remotePrompt);
-      });
-      const mergedPrompts = Array.from(mergedById.values());
-      const mergedOptions = { ...options, ...(remote.options || {}) };
-      const mergedFields = { ...fields, ...(remote.fields || {}) };
-      const synced = await syncCloudData(config, mergedPrompts, mergedOptions, mergedFields);
-      const nextPrompts = (synced.prompts || mergedPrompts).map(normalizePromptRecord);
+      const nextPrompts = (remote.prompts || []).map(normalizePromptRecord);
       setPrompts(nextPrompts);
-      setSelectedPrompt(nextPrompts.find((prompt) => prompt.id === selectedPrompt.id) || nextPrompts[0] || initialPrompts[0]);
-      setOptions((current) => ({ ...current, ...(synced.options || mergedOptions) }));
-      setFields((current) => ({ ...current, ...(synced.fields || mergedFields) }));
+      setSelectedPrompt(nextPrompts[0] || initialPrompts[0]);
+      if (remote.options) setOptions(remote.options);
+      if (remote.fields) setFields(remote.fields);
       setSyncState("success");
-      showToast(`Đã đồng bộ ${nextPrompts.length} prompt với Google Sheet`);
+      showToast(`Đã tải ${nextPrompts.length} prompt từ Google Sheet`);
     } catch (error) {
       setSyncState("error");
-      showToast(error instanceof Error ? error.message : "Đồng bộ Google Sheet thất bại");
+      showToast(error instanceof Error ? error.message : "Tải dữ liệu từ Google Sheet thất bại");
     }
   };
-  const openCloudSync = () => { setSyncDialogOpen(true); };
-  const saveToCloud = () => { void runCloudSync(cloudConfig); };
-  const autoSyncStarted = useRef(false);
-  // The initial sync must run once with the initial in-memory data as the migration source.
-  useEffect(() => {
-    if (autoSyncStarted.current) return;
-    autoSyncStarted.current = true;
-    void runCloudSync(defaultCloudSyncConfig);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={setScreen} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={(prompt) => { setSelectedPrompt(prompt); setForm(formWithPromptImages(prompt)); }} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); showToast("Đã xóa prompt"); }} onEdit={(prompt) => { setForm(formWithPromptImages(prompt)); setScreen("create"); }} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
-  return <div className="app-shell"><Sidebar screen={screen} onNavigate={setScreen} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onSaveToCloud={saveToCloud} onClear={clearAll} onSync={openCloudSync} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}{syncDialogOpen && <CloudSyncDialog config={cloudConfig} syncState={syncState} onClose={() => setSyncDialogOpen(false)} onSaveAndSync={(config) => { setSyncDialogOpen(false); void runCloudSync(config); }} />}</div>;
+  return <div className="app-shell"><Sidebar screen={screen} onNavigate={setScreen} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onSaveToCloud={saveToCloud} onClear={clearAll} onSync={loadFromCloud} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}</div>;
 }
