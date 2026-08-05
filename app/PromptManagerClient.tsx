@@ -836,11 +836,37 @@ function GroupForm({ group, form, onUpdate, settingsOptions }: { group: Group; f
   );
 }
 
-function makePrompt(form: Record<string, string>) {
-  const character = `Young ${form.name || "character"}, ${form.appearance || "distinctive appearance"}, ${form.expression || "expressive pose"}; ${form.pose || "natural pose"}. ${form.hair_style || form.hair || "distinctive hair"}, ${form.eye_color || form.eyes || "expressive eyes"}, ${form.skin_tone || "natural skin"}. Wearing ${form.outfit || "detailed clothing"} in ${form.color || "natural colors"}, made from ${form.clothing_material || "authentic materials"}; ${form.outerwear || "layered outerwear"}, ${form.footwear || "practical footwear"}, ${form.accessories || "subtle accessories"}.`;
-  const scenery = `Set in ${form.location || "a cinematic environment"}${form.region ? `, ${form.region}` : ""}, ${form.scene_type || "a natural landscape"}, during ${form.time || "golden hour"}, ${form.season || "a beautiful season"}, ${form.weather || "atmospheric weather"}; ${form.atmosphere || "rich atmosphere"}, ${form.scene || "layered environmental details"}, ${form.background || "distant background"}. ${form.terrain || "layered terrain"}, ${form.vegetation || "natural vegetation"}, ${form.water || "subtle water details"}, ${form.sky_color || "a colorful sky"}.`;
-  const action = form.main_action ? ` Action: ${form.main_action} ${form.action_details || ""} ${form.action_result || ""} ${form.character_pose || ""} ${form.character_expression || ""} ${form.target_pose || ""} ${form.target_expression || ""}. ${form.action_type || "subtle movement"}, ${form.action_intensity || "moderate intensity"}, ${form.character_direction || "natural direction"}, ${form.action_camera || "cinematic tracking shot"}. From ${form.action_start || "the beginning"} to ${form.action_peak || "the climax"}, ending with ${form.action_end || "a clear resolution"}. ${form.action_prop || "supporting prop"}, ${form.motion_effect || "natural motion"}, ${form.impact_effect || "subtle impact"}.` : "";
-  return `${character} Holding ${form.item || "a meaningful prop"} with ${form.description || "visible handcrafted details"}. ${scenery} ${action} ${form.shot || "Medium shot"}, ${form.angle || "eye level"}, ${form.aspect_ratio || "16:9"}, ${form.depth_of_field || "shallow depth of field"}, ${form.focus || "clear subject focus"}, ${form.composition || form.scenery_composition || "balanced composition"}. ${form.type || "soft light"} from ${form.direction || "directional lighting"}, ${form.source || form.environment_light || "natural source"}, ${form.temperature || "warm color temperature"}, ${form.contrast || "balanced contrast"}. ${form.style || form.scenery_style || "cinematic style"}, ${form.reference || "cinematic reference"}, ${form.rendering || "detailed rendering"}, ${form.texture || "rich textures"}, ${form.mood || "evocative mood"}. ${form.detail || form.scenery_detail || "high detail"}, ${form.resolution || "8K"}, ${form.quality || "high quality"}, ${form.sharpness || "sharp focus"}, ${form.hdr || "high dynamic range"}, ${form.render_engine || "advanced rendering"}. ${form.negative ? `Avoid ${form.negative}.` : ""} ${form.guidance || form.action_note || ""}`;
+function makePrompt(form: Record<string, string>, category: PromptCategory | "all" = "all") {
+  if (category === "all") return [makePrompt(form, "character"), makePrompt(form, "scenery"), makePrompt(form, "action")].join(" ");
+
+  if (category === "character") {
+    const character = `Character: ${form.name || "a character"}, ${form.age || "young"}, ${form.gender || "unspecified"}; ${form.appearance || "distinctive appearance"}, ${form.expression || "expressive mood"}, ${form.pose || "natural pose"}. ${form.hair_style || form.hair || "distinctive hair"}, ${form.eye_color || form.eyes || "expressive eyes"}, ${form.skin_tone || "natural skin"}.`;
+    const clothing = `Clothing: ${form.outfit || "detailed clothing"} in ${form.color || "natural colors"}, ${form.clothing_material || "authentic materials"}, ${form.clothing_condition || "well cared for"}; ${form.outerwear || "layered outerwear"}, ${form.footwear || "practical footwear"}, ${form.accessories || "subtle accessories"}.`;
+    const prop = form.item || form.description || form.secondary_item ? `Prop: ${form.item || "a meaningful prop"}${form.secondary_item ? `, with ${form.secondary_item}` : ""}. ${form.description || form.details || "Visible handcrafted details"}.` : "";
+    const camera = `Camera: ${form.shot || "Medium shot"}, ${form.angle || "eye level"}, ${form.aspect_ratio || "16:9"}, ${form.motion || "static"}, ${form.depth_of_field || "shallow depth of field"}, ${form.focus || "clear subject focus"}, ${form.composition || "balanced composition"}.`;
+    const lighting = `Lighting: ${form.type || "soft light"}, ${form.direction || "directional lighting"}, ${form.intensity || "moderate intensity"}, ${form.source || "natural source"}, ${form.temperature || "warm color temperature"}, ${form.contrast || "balanced contrast"}.`;
+    const style = `Style: ${form.style || "cinematic style"}, ${form.reference || "cinematic reference"}, ${form.rendering || "detailed rendering"}, ${form.texture || "rich textures"}, ${form.mood || "evocative mood"}.`;
+    const quality = `Quality: ${form.detail || "high detail"}, ${form.resolution || "8K"}, ${form.quality || "high quality"}, ${form.sharpness || "sharp focus"}, ${form.hdr || "high dynamic range"}, ${form.render_engine || "advanced rendering"}.${form.negative ? ` Avoid ${form.negative}.` : ""} ${form.guidance || ""}`;
+    return `${character} ${clothing} ${prop} ${camera} ${lighting} ${style} ${quality}`.trim();
+  }
+
+  if (category === "scenery") {
+    const scenery = `Scenery: ${form.scene_type || "a natural landscape"} at ${form.location || "a cinematic environment"}${form.region ? `, ${form.region}` : ""}, during ${form.time || "golden hour"}. ${form.scene || "Layered environmental details"}, ${form.background || "distant background"}, ${form.scale || "wide space"}.`;
+    const weather = `Weather: ${form.weather || "atmospheric weather"}, ${form.season || "a beautiful season"}, ${form.atmosphere || "rich atmosphere"}, ${form.clouds || "soft clouds"}, ${form.sky_color || "a colorful sky"}${form.special_phenomenon ? `, ${form.special_phenomenon}` : ""}.`;
+    const terrain = `Landscape: ${form.terrain || "layered terrain"}, ${form.vegetation || "natural vegetation"}, ${form.water || "subtle water details"}, ${form.landmark || "distinctive landmarks"}.`;
+    const style = `Style: ${form.scenery_style || "cinematic scenery"}, ${form.scenery_composition || "balanced composition"}, ${form.scenery_ratio || "16:9"}, ${form.scenery_palette || "natural colors"}, ${form.scenery_detail || "high detail"}, ${form.environment_light || "soft ambient light"}.`;
+    const extra = [form.scenery_extra, form.scenery_note].filter(Boolean).join(". ");
+    return `${scenery} ${weather} ${terrain} ${style}${extra ? ` Additional details: ${extra}.` : ""}`.trim();
+  }
+
+  const action = `Action: ${form.main_action || "a dynamic movement"}${form.action_details ? `, ${form.action_details}` : ""}${form.action_result ? `, resulting in ${form.action_result}` : ""}. ${form.action_type || "subtle movement"}, ${form.action_intensity || "moderate intensity"}.`;
+  const poses = `Poses and expressions: ${form.character_pose || "a clear character pose"}, ${form.character_expression || "focused expression"}; ${form.target_pose || "responsive target pose"}, ${form.target_expression || "visible target reaction"}.`;
+  const direction = `Movement: ${form.character_direction || "natural direction"}, ${form.target_direction || "responsive movement"}, ${form.action_camera || "cinematic tracking shot"}.`;
+  const timing = `Timing: from ${form.action_start || "the beginning"} to ${form.action_peak || "the climax"}, ending with ${form.action_end || "a clear resolution"}.`;
+  const prop = form.action_prop || form.prop_description ? `Tool: ${form.action_prop || "a supporting tool"}, ${form.prop_hand || "used naturally"}. ${form.prop_description || ""}` : "";
+  const effects = `Effects: ${form.motion_effect || "natural motion"}, ${form.impact_effect || "subtle impact"}${form.sound_effect ? `, ${form.sound_effect}` : ""}.`;
+  const extra = [form.action_lighting, form.action_note].filter(Boolean).join(". ");
+  return `${action} ${poses} ${direction} ${timing} ${prop} ${effects}${extra ? ` Additional details: ${extra}.` : ""}`.trim();
 }
 
 function makeJson(form: Record<string, string>) {
@@ -877,7 +903,7 @@ function JsonPreview({ form, full = false }: { form: Record<string, string>; ful
 function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, configuredGroups, settingsOptions }: { form: Record<string, string>; onUpdate: (key: string, value: string) => void; prompts: PromptRecord[]; onNavigate: (screen: Screen) => void; onSelectPrompt: (prompt: PromptRecord) => void; configuredGroups: Group[]; settingsOptions: Record<string, string[]> }) {
   const [activeCategory, setActiveCategory] = useState<PromptCategory>("character");
   const [promptDraft, setPromptDraft] = useState("");
-  const createPrompt = () => setPromptDraft(makePrompt(form));
+  const createPrompt = () => setPromptDraft(makePrompt(form, activeCategory));
   const clearPrompt = () => setPromptDraft("");
   const categoryGroups = configuredGroups.filter((group) => (group.category || "character") === activeCategory);
   return (
