@@ -92,6 +92,7 @@ button { cursor: pointer; }
 .fields-3 { grid-template-columns: 1fr 1fr 1fr; }
 .fields-2 { grid-template-columns: 1fr 1fr; }
 .fields-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.fields-6, .fields-7, .fields-8, .fields-9, .fields-10, .fields-11 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .field-label { color: #516080; font-size: 10px; line-height: 1.15; min-height: 11px; }
 .field input, .field select, .library-filter-row select, .library-mini-toolbar select, .pagination select, .searchbox input, .order-input input, .order-number { height: 33px; border: 1px solid var(--line-dark); border-radius: 6px; color: #12214a; background: white; padding: 0 10px; outline: none; min-width: 0; font-size: 11px; width: 100%; }
@@ -261,6 +262,18 @@ button { cursor: pointer; }
 [data-theme="dark"] .char-count,
 [data-theme="dark"] .pagination,
 [data-theme="dark"] .mini-date { color: #aab5d0; }
+[data-theme="dark"] .panel-heading h2,
+[data-theme="dark"] .settings-head h2,
+[data-theme="dark"] .settings-table-title h2,
+[data-theme="dark"] .group-picker h3,
+[data-theme="dark"] .json-help h2 { color: #c6b7ff; }
+[data-theme="dark"] .panel-heading h2 small { color: #b5bfd8; }
+[data-theme="dark"] .form-group h3 { color: #eff3ff; }
+[data-theme="dark"] .form-group h3 .icon,
+[data-theme="dark"] .group-index { color: #aa96ff; }
+[data-theme="dark"] .settings-tabs button.active { color: #c6b7ff; border-bottom-color: #aa96ff; }
+[data-theme="dark"] .prompt-name strong,
+[data-theme="dark"] .detail-panel > h3 { color: #eef2ff; }
 [data-theme="dark"] .table-head,
 [data-theme="dark"] .table-header { background: var(--surface-muted); color: #b9c4df; }
 [data-theme="dark"] .json-code,
@@ -319,7 +332,7 @@ button { cursor: pointer; }
   .step-arrow { margin: 0 3px; }
   .step { font-size: 10px; }
   .step:nth-child(n+3) { display: none; }
-  .fields-5, .fields-3, .fields-2, .fields-4 { grid-template-columns: 1fr; }
+  .fields-5, .fields-3, .fields-2, .fields-4, .fields-6, .fields-7, .fields-8, .fields-9, .fields-10, .fields-11 { grid-template-columns: 1fr; }
   .create-right { grid-template-columns: 1fr; }
   .mini-library, .bottom-actions, .edit-information { grid-column: auto; }
   .bottom-actions { flex-direction: column; }

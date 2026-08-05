@@ -73,6 +73,7 @@ type FieldConfig = {
   label: string;
   type: "text" | "select";
   options?: string[];
+  optionGroup?: string;
   required?: boolean;
   placeholder?: string;
 };
@@ -102,6 +103,12 @@ const groups: Group[] = [
       { key: "gender", label: "Giới tính", type: "select", options: ["Nam", "Nữ", "Không xác định"] },
       { key: "appearance", label: "Ngoại hình", type: "text" },
       { key: "expression", label: "Biểu cảm / Tư thế", type: "text" },
+      { key: "pose", label: "Tư thế / hành động", type: "text" },
+      { key: "ethnicity", label: "Dân tộc", type: "select", optionGroup: "subject", options: ["Dân tộc: Do Thái", "Dân tộc: La Mã", "Dân tộc: Trung Đông"] },
+      { key: "profession", label: "Nghề nghiệp", type: "select", optionGroup: "subject", options: ["Nghề nghiệp: Người chăn chiên", "Nghề nghiệp: Chiến binh", "Nghề nghiệp: Vua"] },
+      { key: "role", label: "Vai trò", type: "select", optionGroup: "subject", options: ["Vai trò: Nhân vật chính", "Vai trò: Nhân vật phụ", "Vai trò: Nhân vật nền"] },
+      { key: "hair", label: "Kiểu tóc", type: "select", optionGroup: "subject", options: ["Tóc xoăn nâu", "Tóc dài đen", "Tóc ngắn vàng"] },
+      { key: "eyes", label: "Màu mắt", type: "select", optionGroup: "subject", options: ["Mắt nâu", "Mắt xanh", "Mắt đen"] },
     ],
   },
   {
@@ -114,6 +121,13 @@ const groups: Group[] = [
       { key: "outfit", label: "Trang phục", type: "text" },
       { key: "color", label: "Màu sắc", type: "text" },
       { key: "accessories", label: "Phụ kiện", type: "text" },
+      { key: "clothing_material", label: "Chất liệu", type: "select", optionGroup: "clothing", options: ["Da thuộc", "Vải thô", "Len"] },
+      { key: "clothing_condition", label: "Tình trạng", type: "select", optionGroup: "clothing", options: ["Cũ, sờn", "Mới, sạch", "Trang trọng"] },
+      { key: "outerwear", label: "Lớp áo ngoài", type: "text" },
+      { key: "footwear", label: "Giày dép", type: "select", optionGroup: "clothing", options: ["Sandals da", "Giày da", "Chân trần"] },
+      { key: "headwear", label: "Mũ / khăn trùm", type: "select", optionGroup: "clothing", options: ["Khăn trùm đầu", "Mũ vải", "Không có"] },
+      { key: "gloves", label: "Găng tay", type: "select", optionGroup: "clothing", options: ["Găng tay da", "Găng tay vải", "Không có"] },
+      { key: "jewelry", label: "Trang sức", type: "select", optionGroup: "clothing", options: ["Không có", "Bạc", "Vàng"] },
     ],
   },
   {
@@ -125,6 +139,11 @@ const groups: Group[] = [
     fields: [
       { key: "item", label: "Vũ khí / Vật dụng", type: "text" },
       { key: "description", label: "Mô tả thêm (tùy chọn)", type: "text" },
+      { key: "secondary_item", label: "Vật dụng phụ", type: "text" },
+      { key: "weapon_material", label: "Chất liệu", type: "select", optionGroup: "weapon_prop", options: ["Da thuộc", "Gỗ sồi", "Kim loại"] },
+      { key: "weapon_condition", label: "Tình trạng", type: "select", optionGroup: "weapon_prop", options: ["Cũ, trầy xước", "Mới tinh", "Đã sử dụng"] },
+      { key: "details", label: "Chi tiết hình dáng", type: "text" },
+      { key: "count", label: "Số lượng", type: "text" },
     ],
   },
   {
@@ -138,6 +157,10 @@ const groups: Group[] = [
       { key: "time", label: "Thời gian", type: "select", options: ["Hoàng hôn", "Bình minh", "Ban ngày", "Ban đêm"] },
       { key: "weather", label: "Thời tiết", type: "select", options: ["Trời quang", "Có mây", "Mưa nhẹ", "Sương mù"] },
       { key: "scene", label: "Mô tả cảnh quan", type: "text" },
+      { key: "season", label: "Mùa", type: "select", optionGroup: "environment", options: ["Mùa xuân", "Mùa hè", "Mùa thu", "Mùa đông"] },
+      { key: "atmosphere", label: "Không khí", type: "select", optionGroup: "environment", options: ["Không khí ấm áp", "Không khí lạnh", "Không khí huyền bí"] },
+      { key: "background", label: "Phông nền", type: "text" },
+      { key: "scale", label: "Quy mô cảnh", type: "select", optionGroup: "environment", options: ["Cận cảnh", "Không gian rộng", "Toàn cảnh"] },
     ],
   },
   {
@@ -151,6 +174,9 @@ const groups: Group[] = [
       { key: "angle", label: "Góc nhìn", type: "select", options: ["Eye level", "Bird view", "Low angle", "Over shoulder"] },
       { key: "aspect_ratio", label: "Tỷ lệ khung hình", type: "select", options: ["16:9", "9:16", "1:1"] },
       { key: "motion", label: "Chuyển động", type: "select", options: ["Tĩnh", "Chuyển động nhẹ", "Hành động"] },
+      { key: "depth_of_field", label: "Độ sâu trường ảnh", type: "select", optionGroup: "camera", options: ["Shallow DOF", "Deep DOF"] },
+      { key: "focus", label: "Điểm lấy nét", type: "select", optionGroup: "camera", options: ["Nhân vật", "Đôi mắt", "Phong cảnh"] },
+      { key: "composition", label: "Bố cục", type: "select", optionGroup: "camera", options: ["Centered composition", "Rule of thirds", "Leading lines"] },
     ],
   },
   {
@@ -163,6 +189,9 @@ const groups: Group[] = [
       { key: "type", label: "", type: "select", options: ["Golden Hour", "Sunrise", "Sunset", "Soft Light", "Hard Light"] },
       { key: "direction", label: "Hướng sáng", type: "select", options: ["Từ phía sau & bên trái", "Từ phía trước", "Ánh sáng bên hông"] },
       { key: "intensity", label: "Cường độ", type: "select", options: ["Mạnh vừa", "Mềm", "Mạnh"] },
+      { key: "source", label: "Nguồn sáng", type: "select", optionGroup: "lighting", options: ["Ánh sáng tự nhiên", "Ánh trăng", "Nến"] },
+      { key: "temperature", label: "Nhiệt độ màu", type: "select", optionGroup: "lighting", options: ["Ấm", "Lạnh", "Trung tính"] },
+      { key: "contrast", label: "Độ tương phản", type: "select", optionGroup: "lighting", options: ["Tương phản thấp", "Tương phản cao", "Cân bằng"] },
     ],
   },
   {
@@ -175,6 +204,10 @@ const groups: Group[] = [
       { key: "style", label: "Phong cách", type: "select", options: ["Pixar / 3D Animation", "Realistic", "Photorealistic", "Fantasy", "Cinematic", "Anime"] },
       { key: "detail", label: "Độ chi tiết", type: "select", options: ["Cao", "Vừa", "Thấp"] },
       { key: "palette", label: "Bảng màu", type: "select", options: ["Ấm áp, tự nhiên", "Lạnh, tương phản", "Đơn sắc"] },
+      { key: "reference", label: "Tham chiếu", type: "select", optionGroup: "style", options: ["Cinematic Realism", "Biblical Epic", "Soft Illustration"] },
+      { key: "rendering", label: "Cách thể hiện", type: "select", optionGroup: "style", options: ["Detailed texture", "Matte Painting", "Clean render"] },
+      { key: "texture", label: "Kết cấu", type: "select", optionGroup: "style", options: ["Da và vải chân thực", "Bề mặt mịn", "Nét vẽ thủ công"] },
+      { key: "mood", label: "Tâm trạng hình ảnh", type: "text" },
     ],
   },
   {
@@ -187,6 +220,10 @@ const groups: Group[] = [
       { key: "resolution", label: "Độ phân giải", type: "select", options: ["8K", "4K", "2K"] },
       { key: "quality", label: "Chất lượng", type: "select", options: ["Ultra High Quality", "High Quality", "Masterpiece"] },
       { key: "negative", label: "Negative prompt (tùy chọn)", type: "text" },
+      { key: "sharpness", label: "Độ sắc nét", type: "select", optionGroup: "quality", options: ["Sharp Focus", "Soft Focus", "Crisp details"] },
+      { key: "hdr", label: "Dải tương phản", type: "select", optionGroup: "quality", options: ["High Dynamic Range", "HDR", "Natural range"] },
+      { key: "render_engine", label: "Bộ máy render", type: "select", optionGroup: "quality", options: ["Global Illumination", "Ray Tracing", "Standard render"] },
+      { key: "guidance", label: "Yêu cầu bổ sung", type: "text" },
     ],
   },
 ];
@@ -197,28 +234,64 @@ const defaultForm: Record<string, string> = {
   gender: "Nam",
   appearance: "Tóc xoăn nâu, mặt nâu, khuôn mặt hiền hậu, làn da rám nắng",
   expression: "Quyết tâm, nhìn xa xăm, đứng vững",
+  pose: "Đứng vững, tay cầm ná, hơi nghiêng về phía trước",
+  ethnicity: "Dân tộc: Do Thái",
+  profession: "Nghề nghiệp: Người chăn chiên",
+  role: "Vai trò: Nhân vật chính",
+  hair: "Tóc xoăn nâu",
+  eyes: "Mắt nâu",
   outfit: "Áo choàng chăn chiên truyền thống",
   color: "Nâu đất, be",
   accessories: "Túi da nhỏ đeo bên hông",
+  clothing_material: "Da thuộc",
+  clothing_condition: "Cũ, sờn",
+  outerwear: "Áo choàng len",
+  footwear: "Sandals da",
+  headwear: "Khăn trùm đầu",
+  gloves: "Không có",
+  jewelry: "Không có",
   item: "Ná (sling)",
   description: "Ná da, dây thừng bện",
+  secondary_item: "Túi da nhỏ",
+  weapon_material: "Da thuộc",
+  weapon_condition: "Cũ, trầy xước",
+  details: "Dây da bện, tay cầm vừa vặn",
+  count: "1",
   location: "Thung lũng đá",
   time: "Hoàng hôn",
   weather: "Trời quang",
   scene: "Đồi đá, bụi cây khô, xa xa là những ngọn đồi",
+  season: "Mùa thu",
+  atmosphere: "Không khí ấm áp",
+  background: "Những dãy núi mờ ở đường chân trời",
+  scale: "Không gian rộng",
   shot: "Medium Shot",
   angle: "Eye level",
   aspect_ratio: "16:9",
   motion: "Tĩnh",
+  depth_of_field: "Shallow DOF",
+  focus: "Đôi mắt",
+  composition: "Rule of thirds",
   type: "Golden Hour",
   direction: "Từ phía sau & bên trái",
   intensity: "Mạnh vừa",
+  source: "Ánh sáng tự nhiên",
+  temperature: "Ấm",
+  contrast: "Tương phản thấp",
   style: "Pixar / 3D Animation",
   detail: "Cao",
   palette: "Ấm áp, tự nhiên",
+  reference: "Cinematic Realism",
+  rendering: "Detailed texture",
+  texture: "Da và vải chân thực",
+  mood: "Hùng tráng, chân thành, giàu hy vọng",
   resolution: "8K",
   quality: "Ultra High Quality",
   negative: "blur, low quality, bad anatomy, watermark, text",
+  sharpness: "Sharp Focus",
+  hdr: "High Dynamic Range",
+  render_engine: "Global Illumination",
+  guidance: "Không chữ, không logo, giữ đúng tỷ lệ cơ thể",
 };
 
 const initialPrompts: PromptRecord[] = [
@@ -243,6 +316,17 @@ const optionLists: Record<string, string[]> = {
   lighting: ["Golden Hour", "Sunrise", "Sunset", "Soft Light", "Hard Light", "Rim Light", "Studio", "Volumetric", "Moonlight", "Candle Light", "HDR"],
   style: ["Realistic", "Photorealistic", "Pixar", "Disney", "Anime", "Fantasy", "Cinematic", "Oil Painting", "Watercolor", "3D", "Low Poly", "Concept Art"],
   quality: ["8K", "Ultra Detail", "Masterpiece", "High Quality", "Sharp Focus", "Global Illumination", "Ray Tracing", "HDR"],
+};
+
+const expandedOptionLists: Record<string, string[]> = {
+  subject: [...optionLists.subject, "Dân tộc: Do Thái", "Dân tộc: La Mã", "Dân tộc: Trung Đông", "Nghề nghiệp: Người chăn chiên", "Nghề nghiệp: Chiến binh", "Nghề nghiệp: Vua", "Vai trò: Nhân vật chính", "Vai trò: Nhân vật phụ", "Vai trò: Nhân vật nền", "Tóc xoăn nâu", "Tóc dài đen", "Tóc ngắn vàng", "Mắt nâu", "Mắt xanh", "Mắt đen"],
+  clothing: [...optionLists.clothing, "Áo choàng len", "Áo giáp da", "Áo vải lanh", "Quần nâu", "Sandals da", "Giày da", "Chân trần", "Khăn trùm đầu", "Mũ vải", "Găng tay da", "Găng tay vải", "Không có", "Bạc", "Vàng", "Da thuộc", "Vải thô", "Len", "Cũ, sờn", "Mới, sạch", "Trang trọng"],
+  weapon_prop: [...optionLists.weapon_prop, "Ná da", "Kiếm đồng", "Khiên gỗ", "Gậy gỗ", "Đá cuội", "Dây thừng", "Da thuộc", "Gỗ sồi", "Kim loại", "Cũ, trầy xước", "Mới tinh", "Đã sử dụng"],
+  environment: [...optionLists.environment, "Thung lũng đá", "Đồng bằng", "Làng cổ", "Con đường núi", "Mùa xuân", "Mùa hè", "Mùa thu", "Mùa đông", "Trời quang", "Nhiều mây", "Sương mù", "Không khí ấm áp", "Không khí lạnh", "Không khí huyền bí", "Cận cảnh", "Không gian rộng", "Toàn cảnh"],
+  camera: [...optionLists.camera, "Extreme Close-up", "Medium Shot", "Full Shot", "Top-down", "Three-quarter view", "Shallow DOF", "Deep DOF", "Nhân vật", "Đôi mắt", "Phong cảnh", "Centered composition", "Rule of thirds", "Leading lines"],
+  lighting: [...optionLists.lighting, "Warm sunlight", "Cool moonlight", "Backlight", "Side light", "Low contrast", "High contrast", "Cân bằng", "Ánh sáng tự nhiên", "Ánh trăng", "Nến", "Ấm", "Lạnh", "Trung tính"],
+  style: [...optionLists.style, "Pixar / 3D Animation", "Dark Fantasy", "Biblical Epic", "Cinematic Realism", "Soft Illustration", "Matte Painting", "Detailed texture", "Clean render", "Da và vải chân thực", "Bề mặt mịn", "Nét vẽ thủ công"],
+  quality: [...optionLists.quality, "Ultra High Quality", "High Dynamic Range", "Natural range", "Crisp details", "Soft Focus", "Standard render", "Không chữ", "Không logo", "Giữ đúng tỷ lệ cơ thể"],
 };
 
 const iconComponents: Record<IconName, LucideIcon> = {
@@ -352,42 +436,44 @@ function Toolbar({ onImport, onSave, onClear }: { onImport: (event: ChangeEvent<
   );
 }
 
-function Field({ config, value, onChange }: { config: FieldConfig; value: string; onChange: (value: string) => void }) {
+function Field({ config, value, onChange, settingsOptions }: { config: FieldConfig; value: string; onChange: (value: string) => void; settingsOptions: Record<string, string[]> }) {
+  const selectOptions = config.optionGroup ? settingsOptions[config.optionGroup] || config.options || [] : config.options || [];
+  const selectedValue = selectOptions.includes(value) ? value : selectOptions[0] || value || "";
   return (
     <label className="field">
       {config.label && <span className="field-label">{config.label}</span>}
       {config.type === "select" ? (
-        <span className="select-wrap"><select value={value || config.options?.[0] || ""} onChange={(event) => onChange(event.target.value)}>{config.options?.map((option) => <option key={option}>{option}</option>)}</select><Icon name="chevron" size={15} /></span>
+        <span className="select-wrap"><select value={selectedValue} onChange={(event) => onChange(event.target.value)}>{selectOptions.map((option) => <option key={option}>{option}</option>)}</select><Icon name="chevron" size={15} /></span>
       ) : <input value={value} placeholder={config.placeholder} onChange={(event) => onChange(event.target.value)} />}
     </label>
   );
 }
 
-function GroupForm({ group, form, onUpdate }: { group: Group; form: Record<string, string>; onUpdate: (key: string, value: string) => void }) {
+function GroupForm({ group, form, onUpdate, settingsOptions }: { group: Group; form: Record<string, string>; onUpdate: (key: string, value: string) => void; settingsOptions: Record<string, string[]> }) {
   return (
     <section className="form-group">
       <h3><Icon name={group.icon} size={20} /><span className="group-index">{group.number}.</span>{group.label}</h3>
       <div className={`field-grid fields-${group.fields.length}`}>
-        {group.fields.map((field) => <Field key={field.key} config={field} value={form[field.key] || ""} onChange={(value) => onUpdate(field.key, value)} />)}
+        {group.fields.map((field) => <Field key={field.key} config={field} settingsOptions={settingsOptions} value={form[field.key] || ""} onChange={(value) => onUpdate(field.key, value)} />)}
       </div>
     </section>
   );
 }
 
 function makePrompt(form: Record<string, string>) {
-  return `Young ${form.name || "character"}, ${form.appearance || "distinctive appearance"}, ${form.expression || "expressive pose"}. ${form.outfit || "wearing detailed clothing"}, ${form.item || "holding a meaningful prop"}. Set in ${form.location || "a cinematic environment"} during ${form.time || "golden hour"}, ${form.weather || "atmospheric weather"}. ${form.shot || "Medium shot"}, ${form.angle || "eye level"}, ${form.aspect_ratio || "16:9"}. ${form.type || "soft light"}, ${form.direction || "directional lighting"}. ${form.style || "cinematic style"}, ${form.detail || "high detail"}, ${form.resolution || "8K"}, ${form.quality || "high quality"}.`;
+  return `Young ${form.name || "character"}, ${form.appearance || "distinctive appearance"}, ${form.expression || "expressive pose"}; ${form.pose || "natural pose"}. ${form.ethnicity || "distinct cultural identity"}, ${form.profession || "meaningful profession"}, ${form.role || "important character"}, ${form.hair || "distinctive hair"}, ${form.eyes || "expressive eyes"}. Wearing ${form.outfit || "detailed clothing"} in ${form.color || "natural colors"}, made from ${form.clothing_material || "authentic materials"}; ${form.outerwear || "layered outerwear"}, ${form.footwear || "practical footwear"}, ${form.accessories || "subtle accessories"}. Holding ${form.item || "a meaningful prop"} with ${form.description || "visible handcrafted details"}; ${form.secondary_item || "small supporting prop"}, ${form.weapon_material || "textured material"}, ${form.weapon_condition || "used condition"}. Set in ${form.location || "a cinematic environment"} during ${form.time || "golden hour"}, ${form.season || "a beautiful season"}, ${form.weather || "atmospheric weather"}; ${form.atmosphere || "rich atmosphere"}, ${form.scene || "layered environmental details"}, ${form.background || "distant background"}. ${form.shot || "Medium shot"}, ${form.angle || "eye level"}, ${form.aspect_ratio || "16:9"}, ${form.depth_of_field || "shallow depth of field"}, ${form.focus || "clear subject focus"}, ${form.composition || "balanced composition"}. ${form.type || "soft light"} from ${form.direction || "directional lighting"}, ${form.source || "natural source"}, ${form.temperature || "warm color temperature"}, ${form.contrast || "balanced contrast"}. ${form.style || "cinematic style"}, ${form.reference || "cinematic reference"}, ${form.rendering || "detailed rendering"}, ${form.texture || "rich textures"}, ${form.mood || "evocative mood"}. ${form.detail || "high detail"}, ${form.resolution || "8K"}, ${form.quality || "high quality"}, ${form.sharpness || "sharp focus"}, ${form.hdr || "high dynamic range"}, ${form.render_engine || "advanced rendering"}. ${form.negative ? `Avoid ${form.negative}.` : ""} ${form.guidance || ""}`;
 }
 
 function makeJson(form: Record<string, string>) {
   return {
-    subject: { name: form.name, age: form.age, gender: form.gender, appearance: form.appearance, expression: form.expression },
-    clothing: { outfit: form.outfit, color: form.color, accessories: form.accessories },
-    weapon_prop: { item: form.item, description: form.description },
-    environment: { location: form.location, time: form.time, weather: form.weather, description: form.scene },
-    camera: { shot: form.shot, angle: form.angle, aspect_ratio: form.aspect_ratio, motion: form.motion },
-    lighting: { type: form.type, direction: form.direction, intensity: form.intensity },
-    style: { style: form.style, detail: form.detail, palette: form.palette },
-    quality: { resolution: form.resolution, quality: form.quality, negative_prompt: form.negative },
+    subject: { name: form.name, age: form.age, gender: form.gender, appearance: form.appearance, expression: form.expression, pose: form.pose, ethnicity: form.ethnicity, profession: form.profession, role: form.role, hair: form.hair, eyes: form.eyes },
+    clothing: { outfit: form.outfit, color: form.color, accessories: form.accessories, material: form.clothing_material, condition: form.clothing_condition, outerwear: form.outerwear, footwear: form.footwear, headwear: form.headwear, gloves: form.gloves, jewelry: form.jewelry },
+    weapon_prop: { item: form.item, description: form.description, secondary_item: form.secondary_item, material: form.weapon_material, condition: form.weapon_condition, details: form.details, count: form.count },
+    environment: { location: form.location, time: form.time, weather: form.weather, description: form.scene, season: form.season, atmosphere: form.atmosphere, background: form.background, scale: form.scale },
+    camera: { shot: form.shot, angle: form.angle, aspect_ratio: form.aspect_ratio, motion: form.motion, depth_of_field: form.depth_of_field, focus: form.focus, composition: form.composition },
+    lighting: { type: form.type, direction: form.direction, intensity: form.intensity, source: form.source, temperature: form.temperature, contrast: form.contrast },
+    style: { style: form.style, detail: form.detail, palette: form.palette, reference: form.reference, rendering: form.rendering, texture: form.texture, mood: form.mood },
+    quality: { resolution: form.resolution, quality: form.quality, negative_prompt: form.negative, sharpness: form.sharpness, hdr: form.hdr, render_engine: form.render_engine, guidance: form.guidance },
   };
 }
 
@@ -396,7 +482,7 @@ function JsonPreview({ form, full = false }: { form: Record<string, string>; ful
   return <div className={`json-code ${full ? "full" : ""}`}><pre>{json}</pre></div>;
 }
 
-function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, configuredGroups }: { form: Record<string, string>; onUpdate: (key: string, value: string) => void; prompts: PromptRecord[]; onNavigate: (screen: Screen) => void; onSelectPrompt: (prompt: PromptRecord) => void; configuredGroups: Group[] }) {
+function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, configuredGroups, settingsOptions }: { form: Record<string, string>; onUpdate: (key: string, value: string) => void; prompts: PromptRecord[]; onNavigate: (screen: Screen) => void; onSelectPrompt: (prompt: PromptRecord) => void; configuredGroups: Group[]; settingsOptions: Record<string, string[]> }) {
   const generatedPrompt = makePrompt(form);
   const [promptState, setPromptState] = useState({ source: generatedPrompt, text: generatedPrompt });
   const promptDraft = promptState.source === generatedPrompt ? promptState.text : generatedPrompt;
@@ -404,7 +490,7 @@ function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, confi
     <div className="create-layout">
       <div className="panel form-panel">
         <div className="panel-heading"><h2>THÔNG TIN PROMPT</h2></div>
-        <div className="form-scroll">{configuredGroups.map((group) => <GroupForm key={group.key} group={group} form={form} onUpdate={onUpdate} />)}</div>
+        <div className="form-scroll">{configuredGroups.map((group) => <GroupForm key={group.key} group={group} form={form} onUpdate={onUpdate} settingsOptions={settingsOptions} />)}</div>
       </div>
       <div className="create-right">
         <div className="panel preview-prompt">
@@ -479,16 +565,16 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("options");
   const [selectedGroup, setSelectedGroup] = useState("subject");
-  const [options, setOptions] = useState(optionLists);
+  const [options, setOptions] = useState(expandedOptionLists);
   const [fields, setFields] = useState<Record<string, FieldConfig[]>>(() => Object.fromEntries(groups.map((group) => [group.key, group.fields])));
   const [toast, setToast] = useState("");
   const showToast = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2400); };
   const updateForm = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const savePrompt = () => { const newPrompt: PromptRecord = { id: Date.now(), title: `${form.name || "Prompt mới"} - ${form.time || "Bản nháp"}`, subject: form.name || "Chưa đặt tên", topic: "Nhân vật", style: form.style?.split(" /")[0] || "Realistic", ratio: form.aspect_ratio || "16:9", created: "08/05/2024 10:30", description: makePrompt(form), data: { ...form } }; setPrompts((current) => [newPrompt, ...current]); setSelectedPrompt(newPrompt); showToast("Đã lưu prompt vào thư viện"); };
   const clearAll = () => { setForm(defaultForm); showToast("Đã đặt lại thông tin prompt"); };
-  const importJson = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsed = JSON.parse(String(reader.result)); const next = { ...form, ...parsed.subject, ...parsed.clothing, ...parsed.weapon_prop, ...parsed.environment, ...parsed.camera, ...parsed.lighting, ...parsed.style, ...parsed.quality, scene: parsed.environment?.description || form.scene, negative: parsed.quality?.negative_prompt || form.negative }; setForm(next); showToast("Đã nhập JSON thành công"); } catch { showToast("File JSON không hợp lệ"); } }; reader.readAsText(file); };
+  const importJson = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsed = JSON.parse(String(reader.result)); const next = { ...form, ...parsed.subject, ...parsed.environment, ...parsed.camera, ...parsed.lighting, ...parsed.style, clothing_material: parsed.clothing?.material ?? form.clothing_material, clothing_condition: parsed.clothing?.condition ?? form.clothing_condition, ...parsed.clothing, weapon_material: parsed.weapon_prop?.material ?? form.weapon_material, weapon_condition: parsed.weapon_prop?.condition ?? form.weapon_condition, ...parsed.weapon_prop, scene: parsed.environment?.description || form.scene, negative: parsed.quality?.negative_prompt || form.negative, ...parsed.quality }; setForm(next); showToast("Đã nhập JSON thành công"); } catch { showToast("File JSON không hợp lệ"); } }; reader.readAsText(file); };
   const filteredSelected = useMemo(() => prompts.find((prompt) => prompt.id === selectedPrompt.id) || prompts[0] || initialPrompts[0], [prompts, selectedPrompt.id]);
   const configuredGroups = groups.map((group) => ({ ...group, fields: fields[group.key] || group.fields }));
-  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={setScreen} configuredGroups={configuredGroups} onSelectPrompt={(prompt) => { setSelectedPrompt(prompt); setForm(prompt.data); }} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); showToast("Đã xóa prompt"); }} onEdit={(prompt) => { setForm(prompt.data); setScreen("create"); }} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
+  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={setScreen} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={(prompt) => { setSelectedPrompt(prompt); setForm(prompt.data); }} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); showToast("Đã xóa prompt"); }} onEdit={(prompt) => { setForm(prompt.data); setScreen("create"); }} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
   return <div className="app-shell"><Sidebar screen={screen} onNavigate={setScreen} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onClear={clearAll} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}</div>;
 }
