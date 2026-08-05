@@ -96,6 +96,7 @@ type PromptRecord = {
   created: string;
   description: string;
   imageUrl?: string;
+  imageUrls?: Partial<Record<PromptCategory, string>>;
   data: Record<string, string>;
 };
 
@@ -109,7 +110,32 @@ const defaultCloudSyncConfig: CloudSyncConfig = {
   apiUrl: "https://script.google.com/macros/s/AKfycbwTYtjLpcBuVaX_jDNMJB8NqmwffhTbsvLmaOWxngFYFyGZd9nT7BgnIuIMcJvOxsOgmQ/exec",
 };
 
+type PromptImageUrls = Record<PromptCategory, string>;
+
+function promptImagesFromForm(form: Record<string, string>): PromptImageUrls {
+  return {
+    character: form.image_url_character || form.image_url || "",
+    scenery: form.image_url_scenery || "",
+    action: form.image_url_action || "",
+  };
+}
+
+function promptImagesFromRecord(value: Partial<PromptRecord> & { id?: string | number; data?: Record<string, string> }): PromptImageUrls {
+  const legacyImageUrl = value.imageUrl || value.data?.image_url || "";
+  return {
+    character: value.imageUrls?.character || value.data?.image_url_character || legacyImageUrl,
+    scenery: value.imageUrls?.scenery || value.data?.image_url_scenery || "",
+    action: value.imageUrls?.action || value.data?.image_url_action || "",
+  };
+}
+
+function formWithPromptImages(prompt: PromptRecord): Record<string, string> {
+  const imageUrls = promptImagesFromRecord(prompt);
+  return { ...prompt.data, image_url_character: imageUrls.character, image_url_scenery: imageUrls.scenery, image_url_action: imageUrls.action };
+}
+
 function normalizePromptRecord(value: Partial<PromptRecord> & { id?: string | number; data?: Record<string, string> }): PromptRecord {
+  const imageUrls = promptImagesFromRecord(value);
   return {
     id: Number(value.id) || Date.now(),
     title: value.title || "Prompt mới",
@@ -119,7 +145,8 @@ function normalizePromptRecord(value: Partial<PromptRecord> & { id?: string | nu
     ratio: value.ratio || "16:9",
     created: value.created || new Date().toLocaleString("vi-VN"),
     description: value.description || "",
-    imageUrl: value.imageUrl || value.data?.image_url || "",
+    imageUrl: value.imageUrl || imageUrls.character,
+    imageUrls,
     data: value.data || {},
   };
 }
@@ -907,7 +934,8 @@ function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, confi
   const [activeCategory, setActiveCategory] = useState<PromptCategory>("character");
   const [promptDraft, setPromptDraft] = useState("");
   const [imageLoadError, setImageLoadError] = useState(false);
-  const imageUrl = form.image_url || "";
+  const imageKey = `image_url_${activeCategory}`;
+  const imageUrl = form[imageKey] || (activeCategory === "character" ? form.image_url || "" : "");
   const createPrompt = () => setPromptDraft(makePrompt(form, activeCategory));
   const clearPrompt = () => setPromptDraft("");
   useEffect(() => setImageLoadError(false), [imageUrl]);
@@ -930,7 +958,7 @@ function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, confi
           <div className="panel-heading"><h2>PREVIEW IMAGE</h2></div>
           <div className="image-preview-body">
             <div className="image-frame">{imageUrl && !imageLoadError ? <img src={imageUrl} alt="Preview hình ảnh của prompt" onError={() => setImageLoadError(true)} /> : <div className="image-placeholder">{imageLoadError ? "Không thể tải hình từ URL này" : "Nhập URL hình ảnh bên dưới để xem preview"}</div>}</div>
-            <label className="image-url-field"><span>URL hình ảnh</span><input className="image-url-input" type="url" value={imageUrl} onChange={(event) => onUpdate("image_url", event.target.value)} placeholder="https://example.com/image.jpg" /></label>
+            <label className="image-url-field"><span>URL hình ảnh — {promptCategories.find((category) => category.key === activeCategory)?.label}</span><input className="image-url-input" type="url" value={imageUrl} onChange={(event) => onUpdate(imageKey, event.target.value)} placeholder="https://example.com/image.jpg" /></label>
           </div>
         </div>
         <div className="panel mini-library">
@@ -967,7 +995,8 @@ function LibraryView({ prompts, search, setSearch, selected, onSelect, onDelete,
 }
 
 function PromptDetail({ prompt }: { prompt: PromptRecord }) {
-  return <div className="detail-column"><div className="panel detail-panel"><div className="panel-heading"><h2>CHI TIẾT PROMPT</h2></div><h3>{prompt.title} <span className="ratio-pill">{prompt.ratio}</span></h3><div className="detail-meta"><span>Chủ đề: &nbsp;{prompt.topic}</span><span>Phong cách: &nbsp;{prompt.style}</span><span>Tạo lúc: &nbsp;{prompt.created}</span></div><strong>Mô tả ngắn</strong><p>{prompt.description}</p>{prompt.imageUrl && <div className="saved-image"><img src={prompt.imageUrl} alt={`Hình ảnh của ${prompt.title}`} /><a href={prompt.imageUrl} target="_blank" rel="noreferrer">{prompt.imageUrl}</a></div>}</div><div className="panel detail-json"><div className="panel-heading heading-actions"><h2>XEM TRƯỚC JSON <span className="valid-pill">✓ Hợp lệ</span></h2><button className="primary-button small-button"><Icon name="copy" size={17} />Copy JSON</button></div><JsonPreview form={prompt.data} /></div><button className="panel edit-information"><Icon name="edit" size={18} />Chỉnh sửa thông tin</button></div>;
+  const imageCategories = (["character", "scenery", "action"] as PromptCategory[]).filter((category) => prompt.imageUrls?.[category]);
+  return <div className="detail-column"><div className="panel detail-panel"><div className="panel-heading"><h2>CHI TIẾT PROMPT</h2></div><h3>{prompt.title} <span className="ratio-pill">{prompt.ratio}</span></h3><div className="detail-meta"><span>Chủ đề: &nbsp;{prompt.topic}</span><span>Phong cách: &nbsp;{prompt.style}</span><span>Tạo lúc: &nbsp;{prompt.created}</span></div><strong>Mô tả ngắn</strong><p>{prompt.description}</p>{imageCategories.length > 0 && <div className="saved-images">{imageCategories.map((category) => { const imageUrl = prompt.imageUrls?.[category] || ""; const categoryLabel = promptCategories.find((item) => item.key === category)?.label || category; return <div className="saved-image" key={category}><strong className="saved-image-label">{categoryLabel}</strong><img src={imageUrl} alt={`Hình ảnh ${categoryLabel} của ${prompt.title}`} /><a href={imageUrl} target="_blank" rel="noreferrer">{imageUrl}</a></div>; })}</div>}</div><div className="panel detail-json"><div className="panel-heading heading-actions"><h2>XEM TRƯỚC JSON <span className="valid-pill">✓ Hợp lệ</span></h2><button className="primary-button small-button"><Icon name="copy" size={17} />Copy JSON</button></div><JsonPreview form={prompt.data} /></div><button className="panel edit-information"><Icon name="edit" size={18} />Chỉnh sửa thông tin</button></div>;
 }
 
 function SettingsView({ tab, setTab, category, setCategory, selectedGroup, setSelectedGroup, options, setOptions, fields, setFields }: { tab: SettingsTab; setTab: (tab: SettingsTab) => void; category: PromptCategory; setCategory: (category: PromptCategory) => void; selectedGroup: string; setSelectedGroup: (key: string) => void; options: Record<string, string[]>; setOptions: React.Dispatch<React.SetStateAction<Record<string, string[]>>>; fields: Record<string, FieldConfig[]>; setFields: React.Dispatch<React.SetStateAction<Record<string, FieldConfig[]>>> }) {
@@ -1014,7 +1043,7 @@ export default function Home() {
   const [syncState, setSyncState] = useState<CloudSyncState>("idle");
   const showToast = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2400); };
   const updateForm = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
-  const savePrompt = () => { const newPrompt: PromptRecord = { id: Date.now(), title: `${form.name || "Prompt mới"} - ${form.time || "Bản nháp"}`, subject: form.name || "Chưa đặt tên", topic: "Nhân vật", style: form.style?.split(" /")[0] || "Realistic", ratio: form.aspect_ratio || "16:9", created: "08/05/2024 10:30", description: makePrompt(form), imageUrl: form.image_url || "", data: { ...form } }; setPrompts((current) => [newPrompt, ...current]); setSelectedPrompt(newPrompt); showToast("Đã lưu prompt vào thư viện"); };
+  const savePrompt = () => { const imageUrls = promptImagesFromForm(form); const newPrompt: PromptRecord = { id: Date.now(), title: `${form.name || "Prompt mới"} - ${form.time || "Bản nháp"}`, subject: form.name || "Chưa đặt tên", topic: "Nhân vật", style: form.style?.split(" /")[0] || "Realistic", ratio: form.aspect_ratio || "16:9", created: "08/05/2024 10:30", description: makePrompt(form), imageUrl: imageUrls.character || imageUrls.scenery || imageUrls.action, imageUrls, data: { ...form, image_url_character: imageUrls.character, image_url_scenery: imageUrls.scenery, image_url_action: imageUrls.action } }; setPrompts((current) => [newPrompt, ...current]); setSelectedPrompt(newPrompt); showToast("Đã lưu prompt vào thư viện"); };
   const clearAll = () => { setForm(defaultForm); showToast("Đã đặt lại thông tin prompt"); };
   const importJson = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsed = JSON.parse(String(reader.result)); const next = { ...form, ...parsed.subject, ...parsed.character_details, hair_style: parsed.character_details?.hair_style ?? form.hair_style, hair_color: parsed.character_details?.hair_color ?? form.hair_color, eye_color: parsed.character_details?.eye_color ?? form.eye_color, ...parsed.character_mood, character_pose: parsed.character_mood?.pose ?? form.character_pose, character_mood: parsed.character_mood?.mood ?? form.character_mood, ...parsed.environment, location: parsed.environment?.location ?? form.location, scene_type: parsed.environment?.type ?? form.scene_type, scene: parsed.environment?.description ?? form.scene, ...parsed.scenery_weather, environment_light: parsed.scenery_weather?.light ?? form.environment_light, ...parsed.terrain, terrain: parsed.terrain?.main ?? form.terrain, vegetation: parsed.terrain?.vegetation ?? form.vegetation, water: parsed.terrain?.water ?? form.water, landmark: parsed.terrain?.highlights ?? form.landmark, ...parsed.scenery_style, scenery_style: parsed.scenery_style?.style ?? form.scenery_style, scenery_composition: parsed.scenery_style?.composition ?? form.scenery_composition, scenery_ratio: parsed.scenery_style?.aspect_ratio ?? form.scenery_ratio, scenery_palette: parsed.scenery_style?.palette ?? form.scenery_palette, scenery_detail: parsed.scenery_style?.detail ?? form.scenery_detail, ...parsed.scenery_other, ...parsed.camera, ...parsed.lighting, ...parsed.style, clothing_material: parsed.clothing?.material ?? form.clothing_material, clothing_condition: parsed.clothing?.condition ?? form.clothing_condition, ...parsed.clothing, weapon_material: parsed.weapon_prop?.material ?? form.weapon_material, weapon_condition: parsed.weapon_prop?.condition ?? form.weapon_condition, ...parsed.weapon_prop, ...parsed.quality, negative: parsed.quality?.negative_prompt || form.negative, action_type: parsed.action?.type ?? form.action_type, action_intensity: parsed.action?.intensity ?? form.action_intensity, main_action: parsed.action?.main_action ?? form.main_action, action_details: parsed.action?.details ?? form.action_details, action_result: parsed.action?.result ?? form.action_result, character_pose: parsed.poses?.character_pose ?? form.character_pose, character_expression: parsed.poses?.character_expression ?? form.character_expression, target_pose: parsed.poses?.target_pose ?? form.target_pose, target_expression: parsed.poses?.target_expression ?? form.target_expression, character_direction: parsed.movement_direction?.character ?? form.character_direction, target_direction: parsed.movement_direction?.target ?? form.target_direction, action_camera: parsed.movement_direction?.camera_follow ?? form.action_camera, action_start: parsed.timing?.start ?? form.action_start, action_peak: parsed.timing?.climax ?? form.action_peak, action_end: parsed.timing?.end ?? form.action_end, action_prop: parsed.action_prop?.item ?? form.action_prop, prop_hand: parsed.action_prop?.hand ?? form.prop_hand, prop_description: parsed.action_prop?.description ?? form.prop_description, motion_effect: parsed.action_effects?.motion ?? form.motion_effect, impact_effect: parsed.action_effects?.impact ?? form.impact_effect, sound_effect: parsed.action_effects?.sound ?? form.sound_effect, action_lighting: parsed.action_other?.lighting ?? form.action_lighting, action_note: parsed.action_other?.note ?? form.action_note }; setForm(next); showToast("Đã nhập JSON thành công"); } catch { showToast("File JSON không hợp lệ"); } }; reader.readAsText(file); };
   const filteredSelected = useMemo(() => prompts.find((prompt) => prompt.id === selectedPrompt.id) || prompts[0] || initialPrompts[0], [prompts, selectedPrompt.id]);
@@ -1058,6 +1087,6 @@ export default function Home() {
     void runCloudSync(defaultCloudSyncConfig);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={setScreen} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={(prompt) => { setSelectedPrompt(prompt); setForm({ ...prompt.data, image_url: prompt.imageUrl || prompt.data.image_url || "" }); }} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); showToast("Đã xóa prompt"); }} onEdit={(prompt) => { setForm({ ...prompt.data, image_url: prompt.imageUrl || prompt.data.image_url || "" }); setScreen("create"); }} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
+  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={setScreen} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={(prompt) => { setSelectedPrompt(prompt); setForm(formWithPromptImages(prompt)); }} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); showToast("Đã xóa prompt"); }} onEdit={(prompt) => { setForm(formWithPromptImages(prompt)); setScreen("create"); }} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
   return <div className="app-shell"><Sidebar screen={screen} onNavigate={setScreen} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onSaveToCloud={saveToCloud} onClear={clearAll} onSync={openCloudSync} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}{syncDialogOpen && <CloudSyncDialog config={cloudConfig} syncState={syncState} onClose={() => setSyncDialogOpen(false)} onSaveAndSync={(config) => { setSyncDialogOpen(false); void runCloudSync(config); }} />}</div>;
 }
