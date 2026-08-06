@@ -152,15 +152,19 @@ function normalizePromptRecord(value: Partial<PromptRecord> & { id?: string | nu
 }
 
 async function loadCloudData(config: CloudSyncConfig) {
-  const url = `${config.apiUrl}?action=load`;
-  const response = await fetch(url, { cache: "no-store" });
+  const url = new URL(config.apiUrl);
+  url.searchParams.set("action", "load");
+  const response = await fetch(url.toString(), { cache: "no-store" });
   const payload = await response.json() as { ok?: boolean; error?: string; prompts?: Partial<PromptRecord>[]; options?: Record<string, string[]>; fields?: Record<string, FieldConfig[]> };
   if (!response.ok || !payload.ok) throw new Error(payload.error || "Không thể tải dữ liệu từ Google Sheet");
   return payload;
 }
 
 async function syncCloudData(config: CloudSyncConfig, prompts: PromptRecord[], options: Record<string, string[]>, fields: Record<string, FieldConfig[]>) {
-  const response = await fetch(config.apiUrl, {
+  const url = new URL(config.apiUrl);
+  url.search = "";
+  url.hash = "";
+  const response = await fetch(url.toString(), {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({ action: "sync", prompts, options, fields }),
@@ -967,7 +971,7 @@ function downloadJson(form: Record<string, string>) {
   const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "prompt-manager.json"; anchor.click(); URL.revokeObjectURL(url);
 }
 
-function LibraryView({ prompts, search, setSearch, selected, onSelect, onDelete, onEdit, onCopy }: { prompts: PromptRecord[]; search: string; setSearch: (value: string) => void; selected: PromptRecord | null; onSelect: (prompt: PromptRecord) => void; onDelete: (id: number) => void; onEdit: (prompt: PromptRecord) => void; onCopy: (prompt: PromptRecord) => void }) {
+function LibraryView({ prompts, search, setSearch, selected, onSelect, onDelete, onEdit, onCopy, syncState }: { prompts: PromptRecord[]; search: string; setSearch: (value: string) => void; selected: PromptRecord | null; onSelect: (prompt: PromptRecord) => void; onDelete: (id: number) => void; onEdit: (prompt: PromptRecord) => void; onCopy: (prompt: PromptRecord) => void; syncState: CloudSyncState }) {
   const filtered = prompts.filter((prompt) => `${prompt.title} ${prompt.subject} ${prompt.style}`.toLowerCase().includes(search.toLowerCase()));
   return (
     <div className="library-layout">
@@ -975,7 +979,7 @@ function LibraryView({ prompts, search, setSearch, selected, onSelect, onDelete,
         <div className="panel-heading"><h2>THƯ VIỆN PROMPT</h2></div>
         <div className="library-filter-row"><div className="searchbox wide"><Icon name="search" size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tìm kiếm prompt..." /></div><select><option>Tất cả</option><option>Nhân vật</option><option>Phong cảnh</option></select><select><option>Mới nhất</option><option>Cũ nhất</option></select></div>
         <div className="table-head"><span className="checkbox"></span><span>Tên prompt</span><span>Chủ đề</span><span>Phong cách</span><span>Tạo lúc <Icon name="arrow" size={15} /></span><span></span></div>
-        <div className="prompt-rows">{filtered.length === 0 ? <div className="library-empty">Chưa có prompt. Hãy bấm “Google Sheet” để tải dữ liệu từ Google Sheet.</div> : filtered.map((prompt) => <div className={`prompt-row ${selected?.id === prompt.id ? "selected" : ""}`} key={prompt.id} onClick={() => onSelect(prompt)}><span className="checkbox"></span><div className="prompt-name"><strong>{prompt.title}</strong><div className="tag-row"><span>{prompt.subject}</span><span>{prompt.title.includes("Hoàng hôn") ? "Hoàng hôn" : prompt.topic}</span><span>{prompt.style}</span><span>{prompt.ratio}</span></div></div><span>{prompt.topic}</span><span>{prompt.style}</span><span>{prompt.created}</span><div className="row-actions"><button onClick={(event) => { event.stopPropagation(); onSelect(prompt); }} aria-label="Xem"><Icon name="eye" size={17} /></button><button onClick={(event) => { event.stopPropagation(); onEdit(prompt); }} aria-label="Sửa"><Icon name="edit" size={17} /></button><button onClick={(event) => { event.stopPropagation(); onCopy(prompt); }} aria-label="Sao chép"><Icon name="copy" size={17} /></button><button className="red-icon" onClick={(event) => { event.stopPropagation(); onDelete(prompt.id); }} aria-label="Xóa"><Icon name="trash" size={16} /></button></div></div>)}</div>
+        <div className="prompt-rows">{filtered.length === 0 ? <div className="library-empty">{syncState === "loading" ? "Đang tải dữ liệu từ Google Sheet..." : syncState === "error" ? "Không thể tải dữ liệu từ Google Sheet. Hãy bấm lại nút Google Sheet." : "Chưa có prompt trong Google Sheet."}</div> : filtered.map((prompt) => <div className={`prompt-row ${selected?.id === prompt.id ? "selected" : ""}`} key={prompt.id} onClick={() => onSelect(prompt)}><span className="checkbox"></span><div className="prompt-name"><strong>{prompt.title}</strong><div className="tag-row"><span>{prompt.subject}</span><span>{prompt.title.includes("Hoàng hôn") ? "Hoàng hôn" : prompt.topic}</span><span>{prompt.style}</span><span>{prompt.ratio}</span></div></div><span>{prompt.topic}</span><span>{prompt.style}</span><span>{prompt.created}</span><div className="row-actions"><button onClick={(event) => { event.stopPropagation(); onSelect(prompt); }} aria-label="Xem"><Icon name="eye" size={17} /></button><button onClick={(event) => { event.stopPropagation(); onEdit(prompt); }} aria-label="Sửa"><Icon name="edit" size={17} /></button><button onClick={(event) => { event.stopPropagation(); onCopy(prompt); }} aria-label="Sao chép"><Icon name="copy" size={17} /></button><button className="red-icon" onClick={(event) => { event.stopPropagation(); onDelete(prompt.id); }} aria-label="Xóa"><Icon name="trash" size={16} /></button></div></div>)}</div>
         <div className="pagination"><span>Hiển thị <select><option>10 / trang</option></select></span><div><button>‹</button><button className="active-page">1</button><button>2</button><button>3</button><button>...</button><button>12</button><button>›</button></div></div>
       </div>
       <PromptDetail prompt={selected} />
@@ -1031,7 +1035,7 @@ export default function Home() {
       return defaultCloudSyncConfig;
     }
   });
-  const [syncState, setSyncState] = useState<CloudSyncState>("idle");
+  const [syncState, setSyncState] = useState<CloudSyncState>("loading");
   const cloudOperationRef = useRef<"save" | "load" | null>(null);
   const showToast = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2400); };
   const updateForm = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
@@ -1062,7 +1066,7 @@ export default function Home() {
   const configuredGroups = groups.map((group) => ({ ...group, fields: fields[group.key] || group.fields }));
   const saveToCloud = async () => {
     if (cloudOperationRef.current) return;
-    const config = { apiUrl: cloudConfig.apiUrl.trim() };
+    const config = { apiUrl: cloudConfig.apiUrl.trim() || defaultCloudSyncConfig.apiUrl };
     if (!config.apiUrl) { showToast("Vui lòng cấu hình URL Google Sheet"); setSyncState("error"); return; }
     cloudOperationRef.current = "save";
     setCloudConfig(config);
@@ -1081,7 +1085,7 @@ export default function Home() {
   };
   const loadFromCloud = useCallback(async () => {
     if (cloudOperationRef.current) return;
-    const config = { apiUrl: cloudConfig.apiUrl.trim() };
+    const config = { apiUrl: cloudConfig.apiUrl.trim() || defaultCloudSyncConfig.apiUrl };
     if (!config.apiUrl) { showToast("Vui lòng cấu hình URL Google Sheet"); setSyncState("error"); return; }
     cloudOperationRef.current = "load";
     setCloudConfig(config);
@@ -1110,6 +1114,6 @@ export default function Home() {
   }, [loadFromCloud]);
   const openPromptForEditing = (prompt: PromptRecord) => { setSelectedPrompt(prompt); setForm(formWithPromptImages(prompt)); setEditingPromptId(prompt.id); setScreen("create"); };
   const openNewPrompt = (nextScreen: Screen) => { if (nextScreen === "create" && screen !== "create") { setForm(defaultForm); setEditingPromptId(null); } setScreen(nextScreen); };
-  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={openNewPrompt} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={openPromptForEditing} activeCategory={activeCategory} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); if (editingPromptId === id) { setEditingPromptId(null); setForm(defaultForm); } showToast("Đã xóa prompt"); }} onEdit={openPromptForEditing} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
+  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={openNewPrompt} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={openPromptForEditing} activeCategory={activeCategory} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); if (editingPromptId === id) { setEditingPromptId(null); setForm(defaultForm); } showToast("Đã xóa prompt"); }} onEdit={openPromptForEditing} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} syncState={syncState} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
   return <div className="app-shell"><Sidebar screen={screen} onNavigate={openNewPrompt} activeCategory={activeCategory} onCategoryChange={setActiveCategory} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onSaveToCloud={saveToCloud} onClear={clearAll} onSync={loadFromCloud} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}</div>;
 }
