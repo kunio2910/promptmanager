@@ -762,7 +762,7 @@ function CloudSyncDialog({ config, syncState, onClose, onSaveAndSync }: { config
   */
 }
 
-function Sidebar({ screen, onNavigate }: { screen: Screen; onNavigate: (screen: Screen) => void }) {
+function Sidebar({ screen, onNavigate, activeCategory, onCategoryChange }: { screen: Screen; onNavigate: (screen: Screen) => void; activeCategory: PromptCategory; onCategoryChange: (category: PromptCategory) => void }) {
   const nav = [
     { key: "create" as Screen, icon: "folder" as IconName, label: "Nhập & tạo prompt" },
     { key: "library" as Screen, icon: "library" as IconName, label: "Thư viện prompt" },
@@ -778,7 +778,10 @@ function Sidebar({ screen, onNavigate }: { screen: Screen; onNavigate: (screen: 
       <div className="sidebar-content">
         <button className="primary-button new-prompt" onClick={() => onNavigate("create")}><Icon name="plus" size={25} />Tạo prompt mới</button>
         <nav className="main-nav">
-          {nav.map((item) => <button key={item.key} className={`nav-item ${screen === item.key ? "selected" : ""}`} onClick={() => onNavigate(item.key)}><Icon name={item.icon} size={20} /><span>{item.label}</span></button>)}
+          {nav.map((item) => <div className="nav-group" key={item.key}>
+            <button className={`nav-item ${screen === item.key ? "selected" : ""}`} onClick={() => onNavigate(item.key)}><Icon name={item.icon} size={20} /><span>{item.label}</span></button>
+            {item.key === "create" && screen === "create" && <div className="category-subnav" role="tablist" aria-label="Category tạo prompt">{promptCategories.map((category) => <button key={category.key} className={activeCategory === category.key ? "active" : ""} role="tab" aria-selected={activeCategory === category.key} onClick={() => { onNavigate("create"); onCategoryChange(category.key); }}><Icon name={category.icon} size={17} /><span>{category.label}</span></button>)}</div>}
+          </div>)}
         </nav>
         <div className="quick-guide">
           <div className="guide-title"><Icon name="bulb" size={20} />Hướng dẫn nhanh</div>
@@ -929,8 +932,7 @@ function JsonPreview({ form, full = false }: { form: Record<string, string>; ful
   return <div className={`json-code ${full ? "full" : ""}`}><pre>{json}</pre></div>;
 }
 
-function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, configuredGroups, settingsOptions }: { form: Record<string, string>; onUpdate: (key: string, value: string) => void; prompts: PromptRecord[]; onNavigate: (screen: Screen) => void; onSelectPrompt: (prompt: PromptRecord) => void; configuredGroups: Group[]; settingsOptions: Record<string, string[]> }) {
-  const [activeCategory, setActiveCategory] = useState<PromptCategory>("character");
+function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, configuredGroups, settingsOptions, activeCategory }: { form: Record<string, string>; onUpdate: (key: string, value: string) => void; prompts: PromptRecord[]; onNavigate: (screen: Screen) => void; onSelectPrompt: (prompt: PromptRecord) => void; configuredGroups: Group[]; settingsOptions: Record<string, string[]>; activeCategory: PromptCategory }) {
   const [promptDraft, setPromptDraft] = useState("");
   const [imageLoadError, setImageLoadError] = useState(false);
   const imageKey = `image_url_${activeCategory}`;
@@ -943,7 +945,6 @@ function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, confi
     <div className="create-layout">
       <div className="panel form-panel">
         <div className="panel-heading"><h2>THÔNG TIN PROMPT</h2></div>
-        <div className="category-tabs" role="tablist" aria-label="Category tạo prompt">{promptCategories.map((category) => <button key={category.key} className={activeCategory === category.key ? "active" : ""} role="tab" aria-selected={activeCategory === category.key} onClick={() => setActiveCategory(category.key)}><Icon name={category.icon} size={19} /><span>{category.label}</span></button>)}</div>
         <div className="form-scroll">{categoryGroups.map((group) => <GroupForm key={group.key} group={group} form={form} onUpdate={onUpdate} settingsOptions={settingsOptions} />)}</div>
       </div>
       <div className="create-right">
@@ -1020,6 +1021,7 @@ function JsonView({ form, onImport }: { form: Record<string, string>; onImport: 
 
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("create");
+  const [activeCategory, setActiveCategory] = useState<PromptCategory>("character");
   const [form, setForm] = useState<Record<string, string>>(defaultForm);
   const [prompts, setPrompts] = useState<PromptRecord[]>(initialPrompts);
   const [selectedPrompt, setSelectedPrompt] = useState<PromptRecord>(initialPrompts[0]);
@@ -1114,6 +1116,6 @@ export default function Home() {
   };
   const openPromptForEditing = (prompt: PromptRecord) => { setSelectedPrompt(prompt); setForm(formWithPromptImages(prompt)); setEditingPromptId(prompt.id); setScreen("create"); };
   const openNewPrompt = (nextScreen: Screen) => { if (nextScreen === "create") { setForm(defaultForm); setEditingPromptId(null); } setScreen(nextScreen); };
-  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={openNewPrompt} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={openPromptForEditing} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); if (editingPromptId === id) { setEditingPromptId(null); setForm(defaultForm); } showToast("Đã xóa prompt"); }} onEdit={openPromptForEditing} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
-  return <div className="app-shell"><Sidebar screen={screen} onNavigate={openNewPrompt} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onSaveToCloud={saveToCloud} onClear={clearAll} onSync={loadFromCloud} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}</div>;
+  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={openNewPrompt} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={openPromptForEditing} activeCategory={activeCategory} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); if (editingPromptId === id) { setEditingPromptId(null); setForm(defaultForm); } showToast("Đã xóa prompt"); }} onEdit={openPromptForEditing} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
+  return <div className="app-shell"><Sidebar screen={screen} onNavigate={openNewPrompt} activeCategory={activeCategory} onCategoryChange={setActiveCategory} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onSaveToCloud={saveToCloud} onClear={clearAll} onSync={loadFromCloud} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}</div>;
 }

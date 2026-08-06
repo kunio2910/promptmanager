@@ -45,9 +45,13 @@ button { cursor: pointer; }
 .primary-button:hover { background: linear-gradient(100deg, #3f17d0, #4c1de7); }
 .new-prompt { width: 100%; min-height: 36px; font-size: 14px; }
 .main-nav { display: grid; gap: 4px; margin-top: 18px; }
+.nav-group { display: grid; gap: 3px; }
 .nav-item { min-height: 39px; border: 0; background: transparent; border-radius: 6px; color: var(--navy); display: flex; align-items: center; gap: 15px; padding: 0 12px; text-align: left; font-weight: 600; }
 .nav-item:hover, .nav-item.selected { color: var(--purple); background: var(--purple-soft); }
 .nav-item.selected { border-left: 3px solid var(--purple); padding-left: 9px; }
+.category-subnav { display: grid; gap: 2px; margin: 0 0 5px 29px; padding: 3px 0 4px 10px; border-left: 1px solid var(--line); }
+.category-subnav button { min-height: 33px; border: 0; border-radius: 5px; background: transparent; color: #53617d; display: flex; align-items: center; gap: 9px; padding: 0 9px; text-align: left; font-size: 11px; font-weight: 600; }
+.category-subnav button:hover, .category-subnav button.active { color: var(--purple); background: var(--purple-soft); }
 .quick-guide { margin-top: auto; border-radius: 7px; background: #f5f2ff; padding: 16px 12px 13px; color: #445170; font-size: 11px; line-height: 1.55; }
 .guide-title { display: flex; align-items: center; gap: 10px; color: var(--purple); font-weight: 700; font-size: 12px; margin-bottom: 10px; }
 .quick-guide p { margin: 5px 0 0; }
@@ -360,6 +364,9 @@ button { cursor: pointer; }
   .sidebar-content { padding: 11px 14px; min-height: auto; }
   .new-prompt { width: 190px; }
   .main-nav { display: flex; overflow: auto; margin: 8px -4px 0; }
+  .nav-group { display: flex; flex: 0 0 auto; gap: 3px; }
+  .category-subnav { display: flex; margin: 0; padding: 0; border-left: 0; gap: 3px; }
+  .category-subnav button { min-height: 39px; padding: 0 9px; }
   .nav-item { flex: 0 0 auto; padding: 0 11px; }
   .nav-item.selected { border-left: 0; border-bottom: 3px solid var(--purple); padding-left: 11px; }
   .quick-guide { display: none; }
