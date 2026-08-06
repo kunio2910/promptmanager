@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Camera,
@@ -1079,7 +1079,7 @@ export default function Home() {
       cloudOperationRef.current = null;
     }
   };
-  const loadFromCloud = async () => {
+  const loadFromCloud = useCallback(async () => {
     if (cloudOperationRef.current) return;
     const config = { apiUrl: cloudConfig.apiUrl.trim() };
     if (!config.apiUrl) { showToast("Vui lòng cấu hình URL Google Sheet"); setSyncState("error"); return; }
@@ -1103,7 +1103,11 @@ export default function Home() {
     } finally {
       cloudOperationRef.current = null;
     }
-  };
+  }, [cloudConfig.apiUrl]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void loadFromCloud(); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadFromCloud]);
   const openPromptForEditing = (prompt: PromptRecord) => { setSelectedPrompt(prompt); setForm(formWithPromptImages(prompt)); setEditingPromptId(prompt.id); setScreen("create"); };
   const openNewPrompt = (nextScreen: Screen) => { if (nextScreen === "create" && screen !== "create") { setForm(defaultForm); setEditingPromptId(null); } setScreen(nextScreen); };
   const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={openNewPrompt} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={openPromptForEditing} activeCategory={activeCategory} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); if (editingPromptId === id) { setEditingPromptId(null); setForm(defaultForm); } showToast("Đã xóa prompt"); }} onEdit={openPromptForEditing} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
