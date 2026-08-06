@@ -940,13 +940,14 @@ function JsonPreview({ form, full = false }: { form: Record<string, string>; ful
   return <div className={`json-code ${full ? "full" : ""}`}><pre>{json}</pre></div>;
 }
 
-function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, configuredGroups, settingsOptions, activeCategory }: { form: Record<string, string>; onUpdate: (key: string, value: string) => void; prompts: PromptRecord[]; onNavigate: (screen: Screen) => void; onSelectPrompt: (prompt: PromptRecord) => void; configuredGroups: Group[]; settingsOptions: Record<string, string[]>; activeCategory: PromptCategory }) {
+function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, configuredGroups, settingsOptions, activeCategory, resetToken }: { form: Record<string, string>; onUpdate: (key: string, value: string) => void; prompts: PromptRecord[]; onNavigate: (screen: Screen) => void; onSelectPrompt: (prompt: PromptRecord) => void; configuredGroups: Group[]; settingsOptions: Record<string, string[]>; activeCategory: PromptCategory; resetToken: number }) {
   const [promptDraft, setPromptDraft] = useState("");
   const [imageLoadError, setImageLoadError] = useState(false);
   const imageKey = `image_url_${activeCategory}`;
   const imageUrl = form[imageKey] || (activeCategory === "character" ? form.image_url || "" : "");
   const createPrompt = () => setPromptDraft(makePrompt(form, activeCategory));
   const clearPrompt = () => setPromptDraft("");
+  useEffect(() => setPromptDraft(""), [resetToken]);
   useEffect(() => setImageLoadError(false), [imageUrl]);
   const categoryGroups = configuredGroups.filter((group) => (group.category || "character") === activeCategory).sort((a, b) => a.number - b.number);
   return (
@@ -1042,6 +1043,7 @@ export default function Home() {
   const [options, setOptions] = useState(expandedOptionLists);
   const [fields, setFields] = useState<Record<string, FieldConfig[]>>(() => Object.fromEntries(groups.map((group) => [group.key, group.fields])));
   const [toast, setToast] = useState("");
+  const [formResetToken, setFormResetToken] = useState(0);
   const [cloudConfig, setCloudConfig] = useState<CloudSyncConfig>(() => {
     if (typeof window === "undefined") return defaultCloudSyncConfig;
     try {
@@ -1056,6 +1058,8 @@ export default function Home() {
   useEffect(() => { window.localStorage.setItem("prompt-manager-category", activeCategory); }, [activeCategory]);
   const showToast = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2400); };
   const updateForm = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
+  const resetPromptForm = () => { setForm({ ...blankForm }); setEditingPromptId(null); setSelectedPrompt(null); setFormResetToken((current) => current + 1); };
+  const navigateToScreen = (nextScreen: Screen) => { setScreen(nextScreen); try { window.localStorage.setItem("prompt-manager-screen", nextScreen); } catch { /* localStorage may be unavailable in private browsing */ } };
   const savePrompt = () => {
     const imageUrls = promptImagesFromForm(form);
     const existingPrompt = editingPromptId === null ? undefined : prompts.find((prompt) => prompt.id === editingPromptId);
@@ -1074,11 +1078,12 @@ export default function Home() {
     };
     setPrompts((current) => existingPrompt ? current.map((prompt) => prompt.id === existingPrompt.id ? savedPrompt : prompt) : [savedPrompt, ...current]);
     setSelectedPrompt(savedPrompt);
-    setForm(blankForm);
+    setForm({ ...blankForm });
     setEditingPromptId(null);
+    setFormResetToken((current) => current + 1);
     showToast(existingPrompt ? "Đã ghi đè prompt trong thư viện" : "Đã lưu prompt vào thư viện");
   };
-  const clearAll = () => { setForm(blankForm); setEditingPromptId(null); setSelectedPrompt(null); showToast("Đã xóa toàn bộ thông tin prompt"); };
+  const clearAll = () => { resetPromptForm(); showToast("Đã xóa toàn bộ thông tin prompt"); };
   const importJson = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsed = JSON.parse(String(reader.result)); const next = { ...form, ...parsed.subject, ...parsed.character_details, hair_style: parsed.character_details?.hair_style ?? form.hair_style, hair_color: parsed.character_details?.hair_color ?? form.hair_color, eye_color: parsed.character_details?.eye_color ?? form.eye_color, ...parsed.character_mood, character_pose: parsed.character_mood?.pose ?? form.character_pose, character_mood: parsed.character_mood?.mood ?? form.character_mood, ...parsed.environment, location: parsed.environment?.location ?? form.location, scene_type: parsed.environment?.type ?? form.scene_type, scene: parsed.environment?.description ?? form.scene, ...parsed.scenery_weather, environment_light: parsed.scenery_weather?.light ?? form.environment_light, ...parsed.terrain, terrain: parsed.terrain?.main ?? form.terrain, vegetation: parsed.terrain?.vegetation ?? form.vegetation, water: parsed.terrain?.water ?? form.water, landmark: parsed.terrain?.highlights ?? form.landmark, ...parsed.scenery_style, scenery_style: parsed.scenery_style?.style ?? form.scenery_style, scenery_composition: parsed.scenery_style?.composition ?? form.scenery_composition, scenery_ratio: parsed.scenery_style?.aspect_ratio ?? form.scenery_ratio, scenery_palette: parsed.scenery_style?.palette ?? form.scenery_palette, scenery_detail: parsed.scenery_style?.detail ?? form.scenery_detail, ...parsed.scenery_other, ...parsed.camera, ...parsed.lighting, ...parsed.style, clothing_material: parsed.clothing?.material ?? form.clothing_material, clothing_condition: parsed.clothing?.condition ?? form.clothing_condition, ...parsed.clothing, weapon_material: parsed.weapon_prop?.material ?? form.weapon_material, weapon_condition: parsed.weapon_prop?.condition ?? form.weapon_condition, ...parsed.weapon_prop, ...parsed.quality, negative: parsed.quality?.negative_prompt || form.negative, action_type: parsed.action?.type ?? form.action_type, action_intensity: parsed.action?.intensity ?? form.action_intensity, main_action: parsed.action?.main_action ?? form.main_action, action_details: parsed.action?.details ?? form.action_details, action_result: parsed.action?.result ?? form.action_result, character_pose: parsed.poses?.character_pose ?? form.character_pose, character_expression: parsed.poses?.character_expression ?? form.character_expression, target_pose: parsed.poses?.target_pose ?? form.target_pose, target_expression: parsed.poses?.target_expression ?? form.target_expression, character_direction: parsed.movement_direction?.character ?? form.character_direction, target_direction: parsed.movement_direction?.target ?? form.target_direction, action_camera: parsed.movement_direction?.camera_follow ?? form.action_camera, action_start: parsed.timing?.start ?? form.action_start, action_peak: parsed.timing?.climax ?? form.action_peak, action_end: parsed.timing?.end ?? form.action_end, action_prop: parsed.action_prop?.item ?? form.action_prop, prop_hand: parsed.action_prop?.hand ?? form.prop_hand, prop_description: parsed.action_prop?.description ?? form.prop_description, motion_effect: parsed.action_effects?.motion ?? form.motion_effect, impact_effect: parsed.action_effects?.impact ?? form.impact_effect, sound_effect: parsed.action_effects?.sound ?? form.sound_effect, action_lighting: parsed.action_other?.lighting ?? form.action_lighting, action_note: parsed.action_other?.note ?? form.action_note }; setForm(next); showToast("Đã nhập JSON thành công"); } catch { showToast("File JSON không hợp lệ"); } }; reader.readAsText(file); };
   const filteredSelected = useMemo(() => prompts.find((prompt) => prompt.id === selectedPrompt?.id) || prompts[0] || null, [prompts, selectedPrompt?.id]);
   const configuredGroups = groups.map((group) => ({ ...group, fields: fields[group.key] || group.fields }));
@@ -1130,8 +1135,8 @@ export default function Home() {
     const timer = window.setTimeout(() => { void loadFromCloud(); }, 0);
     return () => window.clearTimeout(timer);
   }, [loadFromCloud]);
-  const openPromptForEditing = (prompt: PromptRecord) => { setSelectedPrompt(prompt); setForm(formWithPromptImages(prompt)); setEditingPromptId(prompt.id); setScreen("create"); };
-  const openNewPrompt = (nextScreen: Screen, resetForm = false) => { if (nextScreen === "create" && resetForm) { setForm(blankForm); setEditingPromptId(null); setSelectedPrompt(null); } setScreen(nextScreen); };
-  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={openNewPrompt} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={openPromptForEditing} activeCategory={activeCategory} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); if (editingPromptId === id) { setEditingPromptId(null); setForm(blankForm); } showToast("Đã xóa prompt"); }} onEdit={openPromptForEditing} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} syncState={syncState} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
+  const openPromptForEditing = (prompt: PromptRecord) => { setSelectedPrompt(prompt); setForm(formWithPromptImages(prompt)); setEditingPromptId(prompt.id); navigateToScreen("create"); };
+  const openNewPrompt = (nextScreen: Screen, resetForm = false) => { if (nextScreen === "create" && resetForm) resetPromptForm(); navigateToScreen(nextScreen); };
+  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={openNewPrompt} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={openPromptForEditing} activeCategory={activeCategory} resetToken={formResetToken} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); if (editingPromptId === id) resetPromptForm(); showToast("Đã xóa prompt"); }} onEdit={openPromptForEditing} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} syncState={syncState} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
   return <div className="app-shell"><Sidebar screen={screen} onNavigate={openNewPrompt} activeCategory={activeCategory} onCategoryChange={setActiveCategory} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onSaveToCloud={saveToCloud} onClear={clearAll} onSync={loadFromCloud} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}</div>;
 }
