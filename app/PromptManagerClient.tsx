@@ -770,7 +770,7 @@ function CloudSyncDialog({ config, syncState, onClose, onSaveAndSync }: { config
   */
 }
 
-function Sidebar({ screen, onNavigate, activeCategory, onCategoryChange }: { screen: Screen; onNavigate: (screen: Screen) => void; activeCategory: PromptCategory; onCategoryChange: (category: PromptCategory) => void }) {
+function Sidebar({ screen, onNavigate, activeCategory, onCategoryChange }: { screen: Screen; onNavigate: (screen: Screen, resetForm?: boolean) => void; activeCategory: PromptCategory; onCategoryChange: (category: PromptCategory) => void }) {
   const nav = [
     { key: "create" as Screen, icon: "folder" as IconName, label: "Nhập & tạo prompt" },
     { key: "library" as Screen, icon: "library" as IconName, label: "Thư viện prompt" },
@@ -784,7 +784,7 @@ function Sidebar({ screen, onNavigate, activeCategory, onCategoryChange }: { scr
         <div><div className="brand-title">Prompt Manager</div><div className="brand-subtitle">Quản lý & tái sử dụng prompt</div></div>
       </div>
       <div className="sidebar-content">
-        <button className="primary-button new-prompt" onClick={() => onNavigate("create")}><Icon name="plus" size={25} />Tạo prompt mới</button>
+        <button className="primary-button new-prompt" onClick={() => onNavigate("create", true)}><Icon name="plus" size={25} />Tạo prompt mới</button>
         <nav className="main-nav">
           {nav.map((item) => <div className="nav-group" key={item.key}>
             <button className={`nav-item ${screen === item.key ? "selected" : ""}`} onClick={() => onNavigate(item.key)}><Icon name={item.icon} size={20} /><span>{item.label}</span></button>
@@ -1131,7 +1131,7 @@ export default function Home() {
     return () => window.clearTimeout(timer);
   }, [loadFromCloud]);
   const openPromptForEditing = (prompt: PromptRecord) => { setSelectedPrompt(prompt); setForm(formWithPromptImages(prompt)); setEditingPromptId(prompt.id); setScreen("create"); };
-  const openNewPrompt = (nextScreen: Screen) => { if (nextScreen === "create") { setForm(blankForm); setEditingPromptId(null); setSelectedPrompt(null); } setScreen(nextScreen); };
+  const openNewPrompt = (nextScreen: Screen, resetForm = false) => { if (nextScreen === "create" && resetForm) { setForm(blankForm); setEditingPromptId(null); setSelectedPrompt(null); } setScreen(nextScreen); };
   const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={openNewPrompt} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={openPromptForEditing} activeCategory={activeCategory} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); if (editingPromptId === id) { setEditingPromptId(null); setForm(blankForm); } showToast("Đã xóa prompt"); }} onEdit={openPromptForEditing} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} syncState={syncState} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
   return <div className="app-shell"><Sidebar screen={screen} onNavigate={openNewPrompt} activeCategory={activeCategory} onCategoryChange={setActiveCategory} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onSaveToCloud={saveToCloud} onClear={clearAll} onSync={loadFromCloud} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}</div>;
 }
