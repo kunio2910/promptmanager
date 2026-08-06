@@ -263,7 +263,7 @@ const groups: Group[] = [
   {
     key: "camera",
     category: "character",
-    number: 6,
+    number: 8,
     label: "Camera / Góc nhìn",
     shortLabel: "Camera / Góc nhìn",
     icon: "camera",
@@ -296,7 +296,7 @@ const groups: Group[] = [
   {
     key: "style",
     category: "character",
-    number: 8,
+    number: 6,
     label: "Phong cách (Style)",
     shortLabel: "Phong cách",
     icon: "palette",
@@ -634,6 +634,8 @@ const defaultForm: Record<string, string> = {
   action_lighting: "Ánh sáng mạnh từ phía sau David",
   action_note: "Nhấn mạnh sự tương phản giữa yếu và mạnh",
 };
+
+const blankForm: Record<string, string> = Object.fromEntries(Object.keys(defaultForm).map((key) => [key, ""]));
 
 const initialPrompts: PromptRecord[] = [];
 
@@ -1057,10 +1059,11 @@ export default function Home() {
     };
     setPrompts((current) => existingPrompt ? current.map((prompt) => prompt.id === existingPrompt.id ? savedPrompt : prompt) : [savedPrompt, ...current]);
     setSelectedPrompt(savedPrompt);
-    setEditingPromptId(savedPrompt.id);
+    setForm(blankForm);
+    setEditingPromptId(null);
     showToast(existingPrompt ? "Đã ghi đè prompt trong thư viện" : "Đã lưu prompt vào thư viện");
   };
-  const clearAll = () => { setForm(defaultForm); setEditingPromptId(null); showToast("Đã đặt lại thông tin prompt"); };
+  const clearAll = () => { setForm(blankForm); setEditingPromptId(null); setSelectedPrompt(null); showToast("Đã xóa toàn bộ thông tin prompt"); };
   const importJson = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsed = JSON.parse(String(reader.result)); const next = { ...form, ...parsed.subject, ...parsed.character_details, hair_style: parsed.character_details?.hair_style ?? form.hair_style, hair_color: parsed.character_details?.hair_color ?? form.hair_color, eye_color: parsed.character_details?.eye_color ?? form.eye_color, ...parsed.character_mood, character_pose: parsed.character_mood?.pose ?? form.character_pose, character_mood: parsed.character_mood?.mood ?? form.character_mood, ...parsed.environment, location: parsed.environment?.location ?? form.location, scene_type: parsed.environment?.type ?? form.scene_type, scene: parsed.environment?.description ?? form.scene, ...parsed.scenery_weather, environment_light: parsed.scenery_weather?.light ?? form.environment_light, ...parsed.terrain, terrain: parsed.terrain?.main ?? form.terrain, vegetation: parsed.terrain?.vegetation ?? form.vegetation, water: parsed.terrain?.water ?? form.water, landmark: parsed.terrain?.highlights ?? form.landmark, ...parsed.scenery_style, scenery_style: parsed.scenery_style?.style ?? form.scenery_style, scenery_composition: parsed.scenery_style?.composition ?? form.scenery_composition, scenery_ratio: parsed.scenery_style?.aspect_ratio ?? form.scenery_ratio, scenery_palette: parsed.scenery_style?.palette ?? form.scenery_palette, scenery_detail: parsed.scenery_style?.detail ?? form.scenery_detail, ...parsed.scenery_other, ...parsed.camera, ...parsed.lighting, ...parsed.style, clothing_material: parsed.clothing?.material ?? form.clothing_material, clothing_condition: parsed.clothing?.condition ?? form.clothing_condition, ...parsed.clothing, weapon_material: parsed.weapon_prop?.material ?? form.weapon_material, weapon_condition: parsed.weapon_prop?.condition ?? form.weapon_condition, ...parsed.weapon_prop, ...parsed.quality, negative: parsed.quality?.negative_prompt || form.negative, action_type: parsed.action?.type ?? form.action_type, action_intensity: parsed.action?.intensity ?? form.action_intensity, main_action: parsed.action?.main_action ?? form.main_action, action_details: parsed.action?.details ?? form.action_details, action_result: parsed.action?.result ?? form.action_result, character_pose: parsed.poses?.character_pose ?? form.character_pose, character_expression: parsed.poses?.character_expression ?? form.character_expression, target_pose: parsed.poses?.target_pose ?? form.target_pose, target_expression: parsed.poses?.target_expression ?? form.target_expression, character_direction: parsed.movement_direction?.character ?? form.character_direction, target_direction: parsed.movement_direction?.target ?? form.target_direction, action_camera: parsed.movement_direction?.camera_follow ?? form.action_camera, action_start: parsed.timing?.start ?? form.action_start, action_peak: parsed.timing?.climax ?? form.action_peak, action_end: parsed.timing?.end ?? form.action_end, action_prop: parsed.action_prop?.item ?? form.action_prop, prop_hand: parsed.action_prop?.hand ?? form.prop_hand, prop_description: parsed.action_prop?.description ?? form.prop_description, motion_effect: parsed.action_effects?.motion ?? form.motion_effect, impact_effect: parsed.action_effects?.impact ?? form.impact_effect, sound_effect: parsed.action_effects?.sound ?? form.sound_effect, action_lighting: parsed.action_other?.lighting ?? form.action_lighting, action_note: parsed.action_other?.note ?? form.action_note }; setForm(next); showToast("Đã nhập JSON thành công"); } catch { showToast("File JSON không hợp lệ"); } }; reader.readAsText(file); };
   const filteredSelected = useMemo(() => prompts.find((prompt) => prompt.id === selectedPrompt?.id) || prompts[0] || null, [prompts, selectedPrompt?.id]);
   const configuredGroups = groups.map((group) => ({ ...group, fields: fields[group.key] || group.fields }));
