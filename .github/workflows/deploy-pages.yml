@@ -1,5 +1,7 @@
 name: Build Prompt Manager for GitHub Pages
 
+# Keep the generated Pages bundle committed with the source snapshot that triggers deployment.
+
 on:
   push:
     branches: [main]
