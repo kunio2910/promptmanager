@@ -823,7 +823,7 @@ function Toolbar({ onImport, onSave, onSaveToCloud, onClear, onSync, syncState }
 
 function Field({ config, value, onChange, settingsOptions }: { config: FieldConfig; value: string; onChange: (value: string) => void; settingsOptions: Record<string, string[]> }) {
   const selectOptions = config.optionGroup ? settingsOptions[config.optionGroup] || config.options || [] : config.options || [];
-  const selectedValue = value || selectOptions[0] || "";
+  const selectedValue = value || "";
   const [isOpen, setIsOpen] = useState(false);
   const [showAllOptions, setShowAllOptions] = useState(false);
   const comboRef = useRef<HTMLSpanElement>(null);
@@ -846,9 +846,9 @@ function Field({ config, value, onChange, settingsOptions }: { config: FieldConf
       {config.label && <span className="field-label">{config.label}</span>}
       {config.type === "select" ? (
         <span ref={comboRef} className={`select-wrap editable-select ${isOpen ? "open" : ""}`}>
-          <input value={selectedValue} onFocus={() => { setIsOpen(true); setShowAllOptions(true); }} onClick={() => { setIsOpen(true); setShowAllOptions(true); }} onChange={(event) => { onChange(event.target.value); setIsOpen(true); setShowAllOptions(false); }} onKeyDown={(event) => { if (event.key === "Escape") setIsOpen(false); }} aria-label={config.label || "Thông tin prompt"} aria-expanded={isOpen} aria-haspopup="listbox" />
+          <input value={selectedValue} placeholder={config.placeholder || "Chọn hoặc nhập..."} onFocus={() => { setIsOpen(true); setShowAllOptions(true); }} onClick={() => { setIsOpen(true); setShowAllOptions(true); }} onChange={(event) => { onChange(event.target.value); setIsOpen(true); setShowAllOptions(false); }} onKeyDown={(event) => { if (event.key === "Escape") setIsOpen(false); }} aria-label={config.label || "Thông tin prompt"} aria-expanded={isOpen} aria-haspopup="listbox" />
           <button type="button" className="select-trigger" aria-label="Mở danh sách tùy chọn" aria-expanded={isOpen} onMouseDown={(event) => event.preventDefault()} onClick={() => { setIsOpen((current) => !current); setShowAllOptions(true); }}><Icon name="chevron" size={15} /></button>
-          {isOpen && <div className="select-menu" role="listbox">{visibleOptions.length ? visibleOptions.map((option) => <button type="button" className={`select-option ${option === value ? "active" : ""}`} role="option" aria-selected={option === value} key={option} onMouseDown={(event) => event.preventDefault()} onClick={() => chooseOption(option)}>{option}</button>) : <span className="select-empty">Không có tùy chọn phù hợp</span>}</div>}
+          {isOpen && <div className="select-menu" role="listbox"><button type="button" className={`select-option ${!value ? "active" : ""}`} role="option" aria-selected={!value} onMouseDown={(event) => event.preventDefault()} onClick={() => chooseOption("")}>Để trống</button>{visibleOptions.length ? visibleOptions.map((option) => <button type="button" className={`select-option ${option === value ? "active" : ""}`} role="option" aria-selected={option === value} key={option} onMouseDown={(event) => event.preventDefault()} onClick={() => chooseOption(option)}>{option}</button>) : <span className="select-empty">Không có tùy chọn phù hợp</span>}</div>}
         </span>
       ) : <input value={value} placeholder={config.placeholder} onChange={(event) => onChange(event.target.value)} />}
     </label>
@@ -964,7 +964,7 @@ function CreateView({ form, onUpdate, prompts, onNavigate, onSelectPrompt, confi
         <div className="panel mini-library">
           <div className="panel-heading"><h2>THƯ VIỆN PROMPT</h2></div>
           <div className="library-mini-toolbar"><div className="searchbox"><Icon name="search" size={17} /><input placeholder="Tìm kiếm prompt..." /></div><select><option>Tất cả</option></select></div>
-          <div className="mini-list">{prompts.slice(0, 3).map((prompt) => <div className="mini-prompt" key={prompt.id}><div><strong>{prompt.title}</strong><div className="tag-row"><span>{prompt.subject}</span><span>{prompt.style}</span><span>{prompt.ratio}</span></div></div><span className="mini-date">{prompt.created}</span><div className="row-actions"><button aria-label="Xem" onClick={() => onSelectPrompt(prompt)}><Icon name="eye" size={17} /></button><button aria-label="Sửa"><Icon name="edit" size={17} /></button><button aria-label="Sao chép"><Icon name="copy" size={17} /></button><button aria-label="Xóa" className="red-icon"><Icon name="trash" size={16} /></button></div></div>)}</div>
+          <div className="mini-list">{prompts.slice(0, 3).map((prompt) => <div className="mini-prompt" key={prompt.id}><div><strong>{prompt.title}</strong><div className="tag-row"><span>{prompt.subject}</span><span>{prompt.style}</span><span>{prompt.ratio}</span></div></div><span className="mini-date">{prompt.created}</span><div className="row-actions"><button aria-label="Xem" onClick={() => onSelectPrompt(prompt)}><Icon name="eye" size={17} /></button><button aria-label="Sửa" onClick={() => onSelectPrompt(prompt)}><Icon name="edit" size={17} /></button><button aria-label="Sao chép"><Icon name="copy" size={17} /></button><button aria-label="Xóa" className="red-icon"><Icon name="trash" size={16} /></button></div></div>)}</div>
           <button className="view-all" onClick={() => onNavigate("library")}>Xem tất cả prompt <Icon name="arrow" size={17} /></button>
         </div>
         <div className="bottom-actions"><button className="outline-button" onClick={() => downloadJson(form)}><Icon name="upload" size={18} />Xuất JSON</button><button className="outline-button" onClick={() => document.getElementById("json-import-input")?.click()}><Icon name="download" size={18} />Nhập JSON</button><input id="json-import-input" type="file" accept="application/json" hidden /></div>
@@ -1024,6 +1024,7 @@ export default function Home() {
   const [form, setForm] = useState<Record<string, string>>(defaultForm);
   const [prompts, setPrompts] = useState<PromptRecord[]>(initialPrompts);
   const [selectedPrompt, setSelectedPrompt] = useState<PromptRecord>(initialPrompts[0]);
+  const [editingPromptId, setEditingPromptId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("options");
   const [settingsCategory, setSettingsCategory] = useState<PromptCategory>("character");
@@ -1043,8 +1044,28 @@ export default function Home() {
   const cloudOperationRef = useRef<"save" | "load" | null>(null);
   const showToast = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2400); };
   const updateForm = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
-  const savePrompt = () => { const imageUrls = promptImagesFromForm(form); const newPrompt: PromptRecord = { id: Date.now(), title: `${form.name || "Prompt mới"} - ${form.time || "Bản nháp"}`, subject: form.name || "Chưa đặt tên", topic: "Nhân vật", style: form.style?.split(" /")[0] || "Realistic", ratio: form.aspect_ratio || "16:9", created: "08/05/2024 10:30", description: makePrompt(form), imageUrl: imageUrls.character || imageUrls.scenery || imageUrls.action, imageUrls, data: { ...form, image_url_character: imageUrls.character, image_url_scenery: imageUrls.scenery, image_url_action: imageUrls.action } }; setPrompts((current) => [newPrompt, ...current]); setSelectedPrompt(newPrompt); showToast("Đã lưu prompt vào thư viện"); };
-  const clearAll = () => { setForm(defaultForm); showToast("Đã đặt lại thông tin prompt"); };
+  const savePrompt = () => {
+    const imageUrls = promptImagesFromForm(form);
+    const existingPrompt = editingPromptId === null ? undefined : prompts.find((prompt) => prompt.id === editingPromptId);
+    const savedPrompt: PromptRecord = {
+      id: existingPrompt?.id || Date.now(),
+      title: `${form.name || "Prompt mới"} - ${form.time || "Bản nháp"}`,
+      subject: form.name || "Chưa đặt tên",
+      topic: "Nhân vật",
+      style: form.style?.split(" /")[0] || "Realistic",
+      ratio: form.aspect_ratio || "16:9",
+      created: existingPrompt?.created || new Date().toLocaleString("vi-VN"),
+      description: makePrompt(form),
+      imageUrl: imageUrls.character || imageUrls.scenery || imageUrls.action,
+      imageUrls,
+      data: { ...form, image_url_character: imageUrls.character, image_url_scenery: imageUrls.scenery, image_url_action: imageUrls.action },
+    };
+    setPrompts((current) => existingPrompt ? current.map((prompt) => prompt.id === existingPrompt.id ? savedPrompt : prompt) : [savedPrompt, ...current]);
+    setSelectedPrompt(savedPrompt);
+    setEditingPromptId(savedPrompt.id);
+    showToast(existingPrompt ? "Đã ghi đè prompt trong thư viện" : "Đã lưu prompt vào thư viện");
+  };
+  const clearAll = () => { setForm(defaultForm); setEditingPromptId(null); showToast("Đã đặt lại thông tin prompt"); };
   const importJson = (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsed = JSON.parse(String(reader.result)); const next = { ...form, ...parsed.subject, ...parsed.character_details, hair_style: parsed.character_details?.hair_style ?? form.hair_style, hair_color: parsed.character_details?.hair_color ?? form.hair_color, eye_color: parsed.character_details?.eye_color ?? form.eye_color, ...parsed.character_mood, character_pose: parsed.character_mood?.pose ?? form.character_pose, character_mood: parsed.character_mood?.mood ?? form.character_mood, ...parsed.environment, location: parsed.environment?.location ?? form.location, scene_type: parsed.environment?.type ?? form.scene_type, scene: parsed.environment?.description ?? form.scene, ...parsed.scenery_weather, environment_light: parsed.scenery_weather?.light ?? form.environment_light, ...parsed.terrain, terrain: parsed.terrain?.main ?? form.terrain, vegetation: parsed.terrain?.vegetation ?? form.vegetation, water: parsed.terrain?.water ?? form.water, landmark: parsed.terrain?.highlights ?? form.landmark, ...parsed.scenery_style, scenery_style: parsed.scenery_style?.style ?? form.scenery_style, scenery_composition: parsed.scenery_style?.composition ?? form.scenery_composition, scenery_ratio: parsed.scenery_style?.aspect_ratio ?? form.scenery_ratio, scenery_palette: parsed.scenery_style?.palette ?? form.scenery_palette, scenery_detail: parsed.scenery_style?.detail ?? form.scenery_detail, ...parsed.scenery_other, ...parsed.camera, ...parsed.lighting, ...parsed.style, clothing_material: parsed.clothing?.material ?? form.clothing_material, clothing_condition: parsed.clothing?.condition ?? form.clothing_condition, ...parsed.clothing, weapon_material: parsed.weapon_prop?.material ?? form.weapon_material, weapon_condition: parsed.weapon_prop?.condition ?? form.weapon_condition, ...parsed.weapon_prop, ...parsed.quality, negative: parsed.quality?.negative_prompt || form.negative, action_type: parsed.action?.type ?? form.action_type, action_intensity: parsed.action?.intensity ?? form.action_intensity, main_action: parsed.action?.main_action ?? form.main_action, action_details: parsed.action?.details ?? form.action_details, action_result: parsed.action?.result ?? form.action_result, character_pose: parsed.poses?.character_pose ?? form.character_pose, character_expression: parsed.poses?.character_expression ?? form.character_expression, target_pose: parsed.poses?.target_pose ?? form.target_pose, target_expression: parsed.poses?.target_expression ?? form.target_expression, character_direction: parsed.movement_direction?.character ?? form.character_direction, target_direction: parsed.movement_direction?.target ?? form.target_direction, action_camera: parsed.movement_direction?.camera_follow ?? form.action_camera, action_start: parsed.timing?.start ?? form.action_start, action_peak: parsed.timing?.climax ?? form.action_peak, action_end: parsed.timing?.end ?? form.action_end, action_prop: parsed.action_prop?.item ?? form.action_prop, prop_hand: parsed.action_prop?.hand ?? form.prop_hand, prop_description: parsed.action_prop?.description ?? form.prop_description, motion_effect: parsed.action_effects?.motion ?? form.motion_effect, impact_effect: parsed.action_effects?.impact ?? form.impact_effect, sound_effect: parsed.action_effects?.sound ?? form.sound_effect, action_lighting: parsed.action_other?.lighting ?? form.action_lighting, action_note: parsed.action_other?.note ?? form.action_note }; setForm(next); showToast("Đã nhập JSON thành công"); } catch { showToast("File JSON không hợp lệ"); } }; reader.readAsText(file); };
   const filteredSelected = useMemo(() => prompts.find((prompt) => prompt.id === selectedPrompt.id) || prompts[0] || initialPrompts[0], [prompts, selectedPrompt.id]);
   const configuredGroups = groups.map((group) => ({ ...group, fields: fields[group.key] || group.fields }));
@@ -1080,6 +1101,7 @@ export default function Home() {
       const nextPrompts = (remote.prompts || []).map(normalizePromptRecord);
       setPrompts(nextPrompts);
       setSelectedPrompt(nextPrompts[0] || initialPrompts[0]);
+      setEditingPromptId(null);
       if (remote.options) setOptions(remote.options);
       if (remote.fields) setFields(remote.fields);
       setSyncState("success");
@@ -1091,6 +1113,8 @@ export default function Home() {
       cloudOperationRef.current = null;
     }
   };
-  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={setScreen} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={(prompt) => { setSelectedPrompt(prompt); setForm(formWithPromptImages(prompt)); }} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); showToast("Đã xóa prompt"); }} onEdit={(prompt) => { setForm(formWithPromptImages(prompt)); setScreen("create"); }} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
-  return <div className="app-shell"><Sidebar screen={screen} onNavigate={setScreen} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onSaveToCloud={saveToCloud} onClear={clearAll} onSync={loadFromCloud} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}</div>;
+  const openPromptForEditing = (prompt: PromptRecord) => { setSelectedPrompt(prompt); setForm(formWithPromptImages(prompt)); setEditingPromptId(prompt.id); setScreen("create"); };
+  const openNewPrompt = (nextScreen: Screen) => { if (nextScreen === "create") { setForm(defaultForm); setEditingPromptId(null); } setScreen(nextScreen); };
+  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={openNewPrompt} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={openPromptForEditing} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); if (editingPromptId === id) { setEditingPromptId(null); setForm(defaultForm); } showToast("Đã xóa prompt"); }} onEdit={openPromptForEditing} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
+  return <div className="app-shell"><Sidebar screen={screen} onNavigate={openNewPrompt} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onSaveToCloud={saveToCloud} onClear={clearAll} onSync={loadFromCloud} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}</div>;
 }
