@@ -804,8 +804,7 @@ function Toolbar({ onImport, onSave, onSaveToCloud, onClear, onSync, syncState }
     window.localStorage.setItem("prompt-manager-theme", theme);
   }, [theme]);
   return (
-    <div className="topbar">
-      <Stepper current={1} />
+    <div className="topbar no-stepper">
       <div className="top-actions">
         <button className="outline-button" onClick={() => fileRef.current?.click()}><Icon name="folder" size={19} />Mở file JSON</button>
         <input ref={fileRef} type="file" accept="application/json" hidden onChange={onImport} />
