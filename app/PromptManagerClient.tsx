@@ -36,6 +36,19 @@ import {
 type Screen = "create" | "library" | "json" | "settings";
 type SettingsTab = "options" | "fields";
 type PromptCategory = "character" | "scenery" | "action";
+
+function readStoredScreen(): Screen {
+  if (typeof window === "undefined") return "create";
+  const stored = window.localStorage.getItem("prompt-manager-screen");
+  return stored === "create" || stored === "library" || stored === "json" || stored === "settings" ? stored : "create";
+}
+
+function readStoredCategory(): PromptCategory {
+  if (typeof window === "undefined") return "character";
+  const stored = window.localStorage.getItem("prompt-manager-category");
+  return stored === "character" || stored === "scenery" || stored === "action" ? stored : "character";
+}
+
 type IconName =
   | "spark"
   | "folder"
@@ -1016,8 +1029,8 @@ function FieldsTable({ fields, onEdit, onDelete }: { fields: FieldConfig[]; onEd
 function JsonView({ form, onImport }: { form: Record<string, string>; onImport: (event: ChangeEvent<HTMLInputElement>) => void }) { const [raw, setRaw] = useState(JSON.stringify(makeJson(form), null, 2)); return <div className="json-view"><div className="panel json-editor"><div className="panel-heading heading-actions"><div><h2>XUẤT / NHẬP JSON</h2><p>Nhập JSON để cập nhật thông tin prompt hoặc xuất cấu trúc hiện tại.</p></div><div className="top-actions"><button className="outline-button" onClick={() => downloadJson(form)}><Icon name="upload" size={18} />Xuất JSON</button><button className="primary-button small-button" onClick={() => document.getElementById("json-screen-import")?.click()}><Icon name="download" size={18} />Nhập JSON</button><input id="json-screen-import" type="file" accept="application/json" hidden onChange={onImport} /></div></div><textarea value={raw} onChange={(event) => setRaw(event.target.value)} /><div className="json-editor-actions"><span className="valid-pill">✓ JSON hợp lệ</span><button className="primary-button" onClick={() => navigator.clipboard?.writeText(raw)}><Icon name="copy" size={17} />Copy JSON</button></div></div><div className="panel json-help"><h2>HƯỚNG DẪN</h2><p>1. Xuất JSON để dùng làm dữ liệu đầu vào cho AI Tool.</p><p>2. Dán JSON đã chỉnh sửa vào khung bên trái.</p><p>3. Nhập lại file JSON để cập nhật form.</p></div></div>; }
 
 export default function Home() {
-  const [screen, setScreen] = useState<Screen>("create");
-  const [activeCategory, setActiveCategory] = useState<PromptCategory>("character");
+  const [screen, setScreen] = useState<Screen>(() => readStoredScreen());
+  const [activeCategory, setActiveCategory] = useState<PromptCategory>(() => readStoredCategory());
   const [form, setForm] = useState<Record<string, string>>(defaultForm);
   const [prompts, setPrompts] = useState<PromptRecord[]>(initialPrompts);
   const [selectedPrompt, setSelectedPrompt] = useState<PromptRecord | null>(null);
@@ -1039,6 +1052,8 @@ export default function Home() {
   });
   const [syncState, setSyncState] = useState<CloudSyncState>("loading");
   const cloudOperationRef = useRef<"save" | "load" | null>(null);
+  useEffect(() => { window.localStorage.setItem("prompt-manager-screen", screen); }, [screen]);
+  useEffect(() => { window.localStorage.setItem("prompt-manager-category", activeCategory); }, [activeCategory]);
   const showToast = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2400); };
   const updateForm = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }));
   const savePrompt = () => {
@@ -1116,7 +1131,7 @@ export default function Home() {
     return () => window.clearTimeout(timer);
   }, [loadFromCloud]);
   const openPromptForEditing = (prompt: PromptRecord) => { setSelectedPrompt(prompt); setForm(formWithPromptImages(prompt)); setEditingPromptId(prompt.id); setScreen("create"); };
-  const openNewPrompt = (nextScreen: Screen) => { if (nextScreen === "create" && screen !== "create") { setForm(defaultForm); setEditingPromptId(null); } setScreen(nextScreen); };
-  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={openNewPrompt} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={openPromptForEditing} activeCategory={activeCategory} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); if (editingPromptId === id) { setEditingPromptId(null); setForm(defaultForm); } showToast("Đã xóa prompt"); }} onEdit={openPromptForEditing} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} syncState={syncState} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
+  const openNewPrompt = (nextScreen: Screen) => { if (nextScreen === "create") { setForm(blankForm); setEditingPromptId(null); setSelectedPrompt(null); } setScreen(nextScreen); };
+  const content = screen === "create" ? <CreateView form={form} onUpdate={updateForm} prompts={prompts} onNavigate={openNewPrompt} configuredGroups={configuredGroups} settingsOptions={options} onSelectPrompt={openPromptForEditing} activeCategory={activeCategory} /> : screen === "library" ? <LibraryView prompts={prompts} search={search} setSearch={setSearch} selected={filteredSelected} onSelect={setSelectedPrompt} onDelete={(id) => { setPrompts((current) => current.filter((prompt) => prompt.id !== id)); if (editingPromptId === id) { setEditingPromptId(null); setForm(blankForm); } showToast("Đã xóa prompt"); }} onEdit={openPromptForEditing} onCopy={(prompt) => { setPrompts((current) => [{ ...prompt, id: Date.now(), title: `${prompt.title} (bản sao)` }, ...current]); showToast("Đã sao chép prompt"); }} syncState={syncState} /> : screen === "settings" ? <SettingsView tab={settingsTab} setTab={setSettingsTab} category={settingsCategory} setCategory={setSettingsCategory} selectedGroup={selectedGroup} setSelectedGroup={setSelectedGroup} options={options} setOptions={setOptions} fields={fields} setFields={setFields} /> : <JsonView form={form} onImport={importJson} />;
   return <div className="app-shell"><Sidebar screen={screen} onNavigate={openNewPrompt} activeCategory={activeCategory} onCategoryChange={setActiveCategory} /><main className="main-area"><Toolbar onImport={importJson} onSave={savePrompt} onSaveToCloud={saveToCloud} onClear={clearAll} onSync={loadFromCloud} syncState={syncState} /><div className="content-area">{content}</div><footer className="app-footer">Prompt Manager · Quản lý & tái sử dụng prompt</footer></main>{toast && <div className="toast">{toast}</div>}</div>;
 }
