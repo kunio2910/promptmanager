@@ -38,6 +38,7 @@ type SettingsTab = "options" | "fields";
 type PromptCategory = "character" | "scenery" | "action";
 
 function readStoredScreen(): Screen {
+  // Read navigation state before the first client render so refresh keeps the active screen.
   if (typeof window === "undefined") return "create";
   const stored = window.localStorage.getItem("prompt-manager-screen");
   return stored === "create" || stored === "library" || stored === "json" || stored === "settings" ? stored : "create";
